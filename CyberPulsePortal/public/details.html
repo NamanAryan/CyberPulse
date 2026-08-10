@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcement Details - CyberPulse Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header Bar -->
+    <header class="header-bar">
+        <div class="container header-container">
+            <div class="brand">
+                <a href="/index.html" class="brand-link" aria-label="Go to home page">
+                    <i class="bi bi-cpu-fill brand-icon"></i>
+                    <span class="brand-name">CyberPulse</span>
+                </a>
+                <span class="brand-divider">/</span>
+                <span class="brand-page">Portal</span>
+            </div>
+            <div class="header-right">
+                <span class="date-display" id="currentDate">-- --- ----</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container">
+            
+            <div class="details-wrapper" id="detailsWrapper" style="display: none;">
+                <a href="all.html" class="btn-back">
+                    <i class="bi bi-arrow-left"></i> Back to All Announcements
+                </a>
+                
+                <div class="details-header">
+                    <h1 class="details-title" id="detailsTitle">Loading...</h1>
+                    <div class="details-meta">
+                        <span class="details-date" id="detailsDate"></span>
+                    </div>
+                </div>
+                
+                <div class="details-short-desc" id="detailsShortDesc">
+                    
+                </div>
+                
+                <div class="details-divider"></div>
+                
+                <div class="details-content">
+                    <iframe id="descriptionIframe" style="width: 100%; border: none; min-height: 400px;"></iframe>
+                </div>
+            </div>
+
+            <!-- Loading / Error states -->
+            <div class="loading-state" id="loadingState">
+                <div class="spinner"></div>
+                <p>Loading announcement...</p>
+            </div>
+            
+            <div class="empty-state" id="errorState" style="display: none;">
+                <i class="bi bi-exclamation-circle empty-icon text-danger"></i>
+                <h3>Announcement Not Found</h3>
+                <p>The announcement you are looking for does not exist or has been removed.</p>
+                <a href="index.html" class="btn-back mt-3" style="display: inline-block; margin-top: 20px;">
+                    <i class="bi bi-house"></i> Return Home
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="js/details.js"></script>
+</body>
+</html>

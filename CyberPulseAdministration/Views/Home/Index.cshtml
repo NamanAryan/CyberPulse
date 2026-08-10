@@ -1,0 +1,143 @@
+@{
+    ViewBag.Title = "Home Dashboard";
+}
+
+<!-- Welcome Section -->
+<div class="page-header mb-4">
+    <h2>Welcome to CyberPulse Admin</h2>
+    <p>Select a module below to manage internal content</p>
+</div>
+
+<div class="row g-4" style="margin-top: 15px;">
+    <!-- Announcement Management Card -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <a href="/Announcement" class="text-decoration-none d-block h-100">
+            <div class="dashboard-card shadow-sm position-relative h-100">
+                <div class="card-content-wrapper">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-megaphone-fill" style="color: #0055cc; margin-right: 8px; font-size: 18px;"></i> Announcements</h3>
+                    <p class="text-secondary mb-0 flex-grow-1" style="margin-left: 26px;">
+                        Create and publish organization-wide announcements. Select active announcements and export them as JSON for the public portal.
+                    </p>
+                </div>
+                <div class="card-action text-primary">
+                    <i class="bi bi-arrow-right fs-5"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- News & Articles Management Card -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <a href="/NewsArticle" class="text-decoration-none d-block h-100">
+            <div class="dashboard-card shadow-sm position-relative h-100">
+                <div class="card-content-wrapper">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-newspaper" style="color: #cc6600; margin-right: 8px; font-size: 18px;"></i> News & Articles</h3>
+                    <p class="text-secondary mb-0 flex-grow-1" style="margin-left: 26px;">
+                        Create news articles and event listings with images, categories, descriptions, and links, then export active entries for the public website.
+                    </p>
+                </div>
+                <div class="card-action" style="color: #cc6600;">
+                    <i class="bi bi-arrow-right fs-5"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- HR Portal Management Card -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <a href="/Hr/Documents" class="text-decoration-none d-block h-100">
+            <div class="dashboard-card shadow-sm position-relative h-100">
+                <div class="card-content-wrapper">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-folder-symlink-fill" style="color: #008800; margin-right: 8px; font-size: 18px;"></i> HR Portal</h3>
+                    <p class="text-secondary mb-0 flex-grow-1" style="margin-left: 26px;">
+                        Manage HR documents, media, and HR announcements from one place. Keep employee resources and internal communications current.
+                    </p>
+                </div>
+                <div class="card-action text-success">
+                    <i class="bi bi-arrow-right fs-5"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Health Tips Management Card -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <a href="/HealthTip" class="text-decoration-none d-block h-100">
+            <div class="dashboard-card shadow-sm position-relative h-100">
+                <div class="card-content-wrapper">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-heart-pulse-fill" style="color: #dc2626; margin-right: 8px; font-size: 18px;"></i> Health Tips</h3>
+                    <p class="text-secondary mb-0 flex-grow-1" style="margin-left: 26px;">
+                        Publish the current health tip as an image or document. Uploading a new file automatically replaces the previous health tip.
+                    </p>
+                </div>
+                <div class="card-action" style="color: #dc2626;">
+                    <i class="bi bi-arrow-right fs-5"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Quality Core Management Card -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <a href="/Quality/Documents" class="text-decoration-none d-block h-100">
+            <div class="dashboard-card shadow-sm position-relative h-100">
+                <div class="card-content-wrapper">
+                    <h3 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check" style="color: #6f42c1; margin-right: 8px; font-size: 18px;"></i> Quality Core</h3>
+                    <p class="text-secondary mb-0 flex-grow-1" style="margin-left: 26px;">
+                        Manage Quality Core documents and Quality announcements, including manuals, procedures, guidelines, templates, forms, and checklists.
+                    </p>
+                </div>
+                <div class="card-action" style="color: #6f42c1;">
+                    <i class="bi bi-arrow-right fs-5"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<style>
+    .dashboard-card {
+        width: 100%;
+        min-height: 150px;
+        background-color: #f9f9f9;
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        padding: 15px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .dashboard-card:hover {
+        background-color: #f1f1f1;
+        border-color: #999999;
+    }
+
+    .card-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .card-content-wrapper h3 {
+        font-size: 18px;
+        color: #333333;
+        margin: 0 0 5px 0;
+        font-family: Arial, sans-serif;
+    }
+
+    .card-content-wrapper p {
+        font-size: 13px;
+        color: #666666;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    .card-action {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-left: 15px;
+    }
+</style>

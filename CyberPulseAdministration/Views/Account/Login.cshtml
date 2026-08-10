@@ -1,0 +1,52 @@
+@model CyberPulseAdministration.Models.LoginViewModel
+
+@{
+    ViewBag.Title = "Sign In";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Welcome Back</h1>
+                <div class="login-subtitle">Access the CyberPulse admin dashboard</div>
+            </div>
+
+            @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { @class = "needs-validation", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+
+                if (!Html.ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        @Html.ValidationSummary(true, "")
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label" for="Username">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "Enter username", autofocus = "autofocus", maxlength = "50" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger small mt-1 d-block" })
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="Password">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Enter password" })
+                    </div>
+                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger small mt-1 d-block" })
+                </div>
+
+                <button type="submit" class="btn btn-login w-100 py-2">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </button>
+            }
+        </div>
+    </div>
+</div>

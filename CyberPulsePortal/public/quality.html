@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality - CyberPulse Portal</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header-bar">
+        <div class="container header-container">
+            <div class="brand">
+                <a href="/index.html" class="brand-link" aria-label="Go to home page">
+                    <i class="bi bi-cpu-fill brand-icon"></i>
+                    <span class="brand-name">CyberPulse</span>
+                </a>
+                <span class="brand-divider">/</span>
+                <span class="brand-page">Quality</span>
+            </div>
+            <div class="header-right">
+                <span class="date-display" id="currentDate">-- --- ----</span>
+                <button class="btn-refresh" id="refreshBtn" title="Check for updates">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container" style="padding-top: 30px; padding-bottom: 40px; max-width: 1200px;">
+            <a href="index.html" class="btn-back"><i class="bi bi-arrow-left"></i> Back to Home</a>
+
+            <div class="quality-page-layout">
+                <section class="carousel-section" id="qualityAnnouncementSection" style="display: none;">
+                    <div class="carousel-box" style="max-width: 100%; height: 100%;">
+                        <div class="carousel-header">
+                            <span class="carousel-header-title">QUALITY ANNOUNCEMENTS</span>
+                            <a href="/quality/all.html?source=quality" class="carousel-header-arrow" aria-label="View all quality announcements">&rarr;</a>
+                        </div>
+                        <div class="carousel-track-wrapper"><div class="carousel-track" id="qualityAnnouncementTrack"></div></div>
+                        <div class="carousel-footer"><div class="carousel-indicators" id="qualityAnnouncementIndicators"></div></div>
+                    </div>
+                </section>
+
+                <section class="media-gallery-section">
+                    <div class="portal-card-header"><h2 class="section-title text-primary" style="text-align:left;">QUALITY CORE</h2></div>
+
+                    <div class="quality-pyramid-wrap">
+                        <svg class="quality-pyramid" viewBox="0 0 400 360" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Quality core pyramid with four tiers: Quality Manual, Quality System Procedures, Standards and Guidelines, and Templates, Forms and Checklists">
+                            <a href="/quality/quality-manual.html" xlink:href="/quality/quality-manual.html" class="pyramid-tier-link">
+                                <polygon class="pyramid-fill pyramid-fill-1" points="200,10 264.8,123 135.2,123"/>
+                                <text class="pyramid-label" x="200" y="89" font-size="15">Quality</text>
+                                <text class="pyramid-label" x="200" y="109" font-size="15">Manual</text>
+                            </a>
+                            <a href="/quality/quality-system-procedure.html" xlink:href="/quality/quality-system-procedure.html" class="pyramid-tier-link">
+                                <polygon class="pyramid-fill pyramid-fill-2" points="135.2,123 264.8,123 308.4,199 91.6,199"/>
+                                <text class="pyramid-label" x="200" y="152" font-size="14">Quality System</text>
+                                <text class="pyramid-label" x="200" y="170" font-size="14">Procedures</text>
+                            </a>
+                            <a href="/quality/quality-standard-guidelines.html" xlink:href="/quality/quality-standard-guidelines.html" class="pyramid-tier-link">
+                                <polygon class="pyramid-fill pyramid-fill-3" points="91.6,199 308.4,199 352,275 48,275"/>
+                                <text class="pyramid-label" x="200" y="228" font-size="14.5">Standards and</text>
+                                <text class="pyramid-label" x="200" y="246" font-size="14.5">Guidelines</text>
+                            </a>
+                            <a href="/quality/quality-template-form-checklist.html" xlink:href="/quality/quality-template-form-checklist.html" class="pyramid-tier-link">
+                                <polygon class="pyramid-fill pyramid-fill-4" points="48,275 352,275 395,350 5,350"/>
+                                <text class="pyramid-label" x="200" y="303" font-size="15.5">Templates, Forms</text>
+                                <text class="pyramid-label" x="200" y="321" font-size="15.5">and Checklists</text>
+                            </a>
+
+                            <polygon class="pyramid-outline" points="200,10 395,350 5,350"/>
+                            <line class="pyramid-divider" x1="135.2" y1="123" x2="264.8" y2="123"/>
+                            <line class="pyramid-divider" x1="91.6" y1="199" x2="308.4" y2="199"/>
+                            <line class="pyramid-divider" x1="48" y1="275" x2="352" y2="275"/>
+                        </svg>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/quality.js?v=1"></script>
+</body>
+</html>

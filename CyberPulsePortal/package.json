@@ -1,0 +1,12 @@
+{
+  "name": "cyberpulse-portal",
+  "version": "1.0.0",
+  "description": "CyberPulse Portal - Displays announcements, news articles, and HR resources.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

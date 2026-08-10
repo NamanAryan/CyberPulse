@@ -1,0 +1,256 @@
+@model CyberPulseAdministration.Models.QualityAnnouncement
+
+@{
+    ViewBag.Title = "Edit Quality Announcement";
+}
+
+<!-- Page Header -->
+<div class="page-header mb-3">
+    <a href="@Url.Action("Announcements", "Quality")" class="text-secondary text-decoration-none small fw-medium">
+        <i class="bi bi-arrow-left me-1"></i>Back to Quality Announcements
+    </a>
+    <h2 class="fw-bold mt-2 mb-1">Edit Quality Announcement</h2>
+    <p class="text-secondary mb-0">Modify an existing quality announcement record.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card p-4">
+            @using (Html.BeginForm("Edit", "QualityAnnouncement", null, FormMethod.Post, new { @class = "needs-validation", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(m => m.ID)
+                @Html.HiddenFor(m => m.AnnouncementGuid)
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0 small fw-medium" for="Title">Title <span class="text-danger">*</span></label>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-10 small" id="title-counter">0 / 50</span>
+                            </div>
+                            @Html.TextBoxFor(m => m.Title, new { @class = "form-control form-control-sm", placeholder = "Enter title (max 50, no spaces)", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.Title, "", new { @class = "text-danger small mt-1 d-block" })
+                            <small class="text-muted fst-italic">e.g. ISO-Audit, New-Quality-Standard</small>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="form-label mb-0 small fw-medium" for="PageTitle">Page Title <span class="text-danger">*</span></label>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-10 small" id="page-title-counter">0 / 50</span>
+                                    </div>
+                                    @Html.TextBoxFor(m => m.PageTitle, new { @class = "form-control form-control-sm", placeholder = "Enter page title (max 50)", maxlength = "50" })
+                                    @Html.ValidationMessageFor(m => m.PageTitle, "", new { @class = "text-danger small mt-1 d-block" })
+                                    <small class="text-muted fst-italic">e.g. iso-audit, new-standard</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label small fw-medium mb-1" for="Date">Date <span class="text-danger">*</span></label>
+                                    @Html.TextBoxFor(m => m.Date, "{0:yyyy-MM-dd}", new { @type = "date", @class = "form-control form-control-sm" })
+                                    @Html.ValidationMessageFor(m => m.Date, "", new { @class = "text-danger small mt-1 d-block" })
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0 small fw-medium" for="ShortDescription">Short Description <span class="text-danger">*</span></label>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-10 small" id="short-desc-counter">0 / 50</span>
+                            </div>
+                            @Html.TextBoxFor(m => m.ShortDescription, new { @class = "form-control form-control-sm", placeholder = "Enter short description (max 50)", maxlength = "50" })
+                            @Html.ValidationMessageFor(m => m.ShortDescription, "", new { @class = "text-danger small mt-1 d-block" })
+                            <small class="text-muted fst-italic">e.g. Quality-Audit-For-2025, New-Process-Docs</small>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0 small fw-medium" for="Description">Description <span class="text-danger">*</span></label>
+                                <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-10 small">Raw HTML/CSS Enabled</span>
+                            </div>
+                            @Html.TextAreaFor(m => m.Description, new { @class = "form-control form-control-sm font-monospace", style = "font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px;", rows = 8, placeholder = "<div class='banner'>\n  <h2>Raw HTML Here</h2>\n</div>" })
+                            @Html.ValidationMessageFor(m => m.Description, "", new { @class = "text-danger small mt-1 d-block" })
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="btnPreviewHtml">
+                                <i class="bi bi-eye me-1"></i>Preview HTML
+                            </button>
+                        </div>
+                    </div>
+
+<!-- HTML Preview Modal -->
+<div class="modal fade" id="htmlPreviewModal" tabindex="-1" aria-labelledby="htmlPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="htmlPreviewModalLabel"><i class="bi bi-eye me-2"></i>HTML Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <iframe id="previewIframe" title="HTML preview" style="width: 100%; height: 180px; max-height: 55vh; border: none; display: block;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="form-label small fw-medium d-block mb-1">Is Active <span class="text-danger">*</span></label>
+                            <div class="form-check form-check-inline me-4">
+                                @Html.RadioButtonFor(m => m.IsActive, true, new { @id = "isActiveYes", @class = "form-check-input" })
+                                <label class="form-check-label text-secondary small" for="isActiveYes">Yes</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                @Html.RadioButtonFor(m => m.IsActive, false, new { @id = "isActiveNo", @class = "form-check-input" })
+                                <label class="form-check-label text-secondary small" for="isActiveNo">No</label>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.IsActive, "", new { @class = "text-danger small mt-1 d-block" })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-start gap-3 mt-4 pt-3 border-top">
+                    <a href="@Url.Action("Announcements", "Quality")" class="btn btn-outline-secondary btn-sm">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function setupCounter(inputId, counterId, maxLength) {
+            var input = document.getElementById(inputId);
+            var counter = document.getElementById(counterId);
+            if (input && counter) {
+                var updateCounter = function () {
+                    var currentLength = input.value ? input.value.length : 0;
+                    counter.textContent = currentLength + " / " + maxLength;
+                    if (currentLength >= maxLength) {
+                        counter.classList.remove("bg-secondary-subtle", "text-secondary");
+                        counter.classList.add("bg-danger-subtle", "text-danger");
+                    } else {
+                        counter.classList.add("bg-secondary-subtle", "text-secondary");
+                        counter.classList.remove("bg-danger-subtle", "text-danger");
+                    }
+                };
+                input.addEventListener("input", updateCounter);
+                updateCounter();
+            }
+        }
+
+        setupCounter("Title", "title-counter", 50);
+        setupCounter("PageTitle", "page-title-counter",20);
+        setupCounter("ShortDescription", "short-desc-counter", 50);
+
+        var inputsToValidate = document.querySelectorAll('#Title, #PageTitle');
+        inputsToValidate.forEach(function(input) {
+            input.addEventListener('input', function () {
+                if (window.$ && $(this).closest('form').length) {
+                    $(this).valid();
+                }
+            });
+        });
+
+        // HTML Preview button
+        var btnPreview = document.getElementById('btnPreviewHtml');
+        if (btnPreview) {
+            btnPreview.addEventListener('click', function () {
+                var descField = document.getElementById('Description');
+                var previewIframe = document.getElementById('previewIframe');
+                if (descField && previewIframe) {
+                    var htmlContent = descField.value;
+                    if (!htmlContent || htmlContent.trim() === '') {
+                        descField.focus();
+                        if (window.$ && $(descField).closest('form').length) {
+                            $(descField).valid();
+                        }
+                        return;
+                    }
+                    
+                    const docReset = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="utf-8">
+                            <link rel="preconnect" href="https://fonts.googleapis.com">
+                            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                            <style>
+                                * { box-sizing: border-box; }
+                                body {
+                                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                    color: #374151;
+                                    font-size: 15.5px;
+                                    line-height: 1.7;
+                                    margin: 0;
+                                    padding: 20px;
+                                    background-color: transparent;
+                                    -webkit-font-smoothing: antialiased;
+                                }
+                                a { color: #003057; text-decoration: none; font-weight: 500; }
+                                a:hover { text-decoration: underline; }
+                                p { margin-top: 0; margin-bottom: 18px; }
+                                h1, h2, h3, h4, h5, h6 {
+                                    color: #374151;
+                                    font-family: 'Outfit', 'Inter', sans-serif;
+                                    margin-top: 0;
+                                    margin-bottom: 14px;
+                                    line-height: 1.3;
+                                }
+                                h1 { font-size: 24px; font-weight: 700; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+                                h2 { font-size: 20px; font-weight: 600; }
+                                h3 { font-size: 18px; font-weight: 600; }
+                                ul, ol { margin-top: 0; margin-bottom: 18px; padding-left: 24px; }
+                                li { margin-bottom: 8px; }
+                                blockquote {
+                                    margin: 0 0 18px 0;
+                                    padding-left: 16px;
+                                    border-left: 4px solid #d1d5db;
+                                    color: #6b7280;
+                                    font-style: italic;
+                                }
+                                img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 16px; }
+                                table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 14px; }
+                                th, td { padding: 10px 14px; border: 1px solid #e5e7eb; text-align: left; }
+                                th { background-color: #fafbfc; font-weight: 600; }
+                            </style>
+                        </head>
+                        <body>
+                            ${htmlContent}
+                        </body>
+                        </html>
+                    `;
+                    
+                    previewIframe.style.height = '180px';
+                    previewIframe.onload = function () {
+                        var previewDocument = previewIframe.contentDocument;
+                        var contentHeight = Math.max(previewDocument.body.scrollHeight, previewDocument.documentElement.scrollHeight, 180);
+                        previewIframe.style.height = Math.min(contentHeight, 560) + 'px';
+                    };
+                    previewIframe.srcdoc = docReset;
+                    
+                    var modal = new bootstrap.Modal(document.getElementById('htmlPreviewModal'));
+                    modal.show();
+                }
+            });
+        }
+    });
+</script>

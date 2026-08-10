@@ -1,0 +1,897 @@
+@model IEnumerable<CyberPulseAdministration.Models.HrFile>
+
+@{
+    var docFiles = Model?.Where(f => f.FileType == "pdf" || f.FileType == "word" || f.FileType == "txt" || f.FileType == "excel").ToList() ?? new List<CyberPulseAdministration.Models.HrFile>();
+    var photoFiles = Model?.Where(f => f.FileType == "photo").ToList() ?? new List<CyberPulseAdministration.Models.HrFile>();
+    var videoFiles = Model?.Where(f => f.FileType == "video").ToList() ?? new List<CyberPulseAdministration.Models.HrFile>();
+
+    string activeMainTab = ViewBag.ActiveMainTab as string ?? "Documents";
+    var announcements = ViewBag.Announcements as IEnumerable<CyberPulseAdministration.Models.HrAnnouncement>;
+    ViewBag.Title = activeMainTab == "Announcements" ? "HR Announcements" : "HR Portal";
+
+    Func<long, string> formatSize = (bytes) =>
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB" };
+        int counter = 0;
+        decimal number = bytes;
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number /= 1024;
+            counter++;
+        }
+        return string.Format("{0:n1} {1}", number, suffixes[counter]);
+    };
+}
+
+<style>
+    /* Tab Navigation Styles (Main Tabs) */
+    .main-tab-nav {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .main-tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6c757d;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .main-tab-btn:hover {
+        color: #1565c0;
+    }
+    .main-tab-btn.active {
+        color: #1565c0;
+        border-bottom-color: #1565c0;
+    }
+
+    /* Tab Transition */
+    .main-pane-content {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .main-pane-content.active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* HR Media styles */
+    .media-thumbnail-container {
+        position: relative;
+        width: 100%;
+        height: 250px;
+        background: #f8f9fa;
+        overflow: hidden;
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    .media-thumbnail-container:hover {
+        opacity: 0.9;
+    }
+    .media-thumbnail-container img, .media-thumbnail-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .play-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3rem;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        pointer-events: none;
+    }
+    .hover-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    
+    /* --- Media Viewer Overlay --- */
+    .viewer-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.88);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        animation: fadeIn 0.2s ease;
+    }
+    .viewer-overlay.open {
+        display: flex;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .viewer-close {
+        position: absolute;
+        top: 20px;
+        right: 28px;
+        font-size: 28px;
+        color: rgba(255,255,255,0.8);
+        cursor: pointer;
+        z-index: 100;
+        background: none;
+        border: none;
+        transition: color 0.2s;
+    }
+    .viewer-close:hover {
+        color: #fff;
+    }
+    .viewer-title {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255,255,255,0.75);
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 80%;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        z-index: 100;
+    }
+    .viewer-overlay img,
+    .viewer-overlay video {
+        width: 95vw;
+        height: 90vh;
+        object-fit: contain;
+        z-index: 50;
+    }
+</style>
+
+<!-- Hidden upload form (auto-submits on file select) -->
+@using (Html.BeginForm("Upload", "Hr", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm", style = "display:none" }))
+{
+    @Html.AntiForgeryToken()
+    <input type="file" id="directUploadInput" name="files" multiple
+           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.mp4,.mov,.avi,.mkv,.jpg,.jpeg,.png,.gif,.webp"
+           onchange="this.form.submit();" />
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="fw-bold mb-1" id="sectionHeading">@(activeMainTab == "Announcements" ? "HR Announcements" : "HR Portal Files")</h2>
+        <p class="text-secondary mb-0 small" id="sectionDescription">@(activeMainTab == "Announcements" ? "Create and manage HR announcements." : "Upload and manage employee documents, templates, videos, and photos.")</p>
+    </div>
+    <button type="button" class="btn btn-primary" id="uploadBtn" onclick="document.getElementById('directUploadInput').click();"
+            style="@(activeMainTab == "Announcements" ? "display:none;" : "")">
+        <i class="bi bi-cloud-arrow-up me-1"></i>Upload Files
+    </button>
+</div>
+
+<div id="js-alert-container"></div>
+
+<!-- Alerts -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Main Tab Navigation -->
+<div class="main-tab-nav">
+    <button class="main-tab-btn @(activeMainTab == "Documents" ? "active" : "")" id="main-tab-Documents" onclick="switchMainTab('Documents', '@Url.Action("Documents", "Hr")')">
+        <i class="bi bi-file-earmark-text me-1"></i> Documents
+    </button>
+    <button class="main-tab-btn @(activeMainTab == "Announcements" ? "active" : "")" id="main-tab-Announcements" onclick="switchMainTab('Announcements', '@Url.Action("Announcements", "Hr")')">
+        <i class="bi bi-megaphone me-1"></i> Announcements
+    </button>
+</div>
+
+<!-- Main Pane: Documents -->
+<div class="main-pane-content @(activeMainTab == "Documents" ? "active" : "")" id="main-pane-Documents">
+
+    <!-- Tabs Navigation -->
+    <div class="card p-3 mb-4 border border-secondary border-opacity-10 shadow-sm">
+        <ul class="nav nav-pills nav-fill gap-2" id="hrTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active d-flex align-items-center justify-content-center gap-2" id="docs-tab" data-bs-toggle="pill" data-bs-target="#docs-pane" type="button" role="tab" aria-controls="docs-pane" aria-selected="true">
+                    <i class="bi bi-file-earmark-text fs-5 text-primary"></i>
+                    <span>Documents (@docFiles.Count)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="photos-tab" data-bs-toggle="pill" data-bs-target="#photos-pane" type="button" role="tab" aria-controls="photos-pane" aria-selected="false">
+                    <i class="bi bi-image fs-5 text-success"></i>
+                    <span>Photos (@photoFiles.Count)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="videos-tab" data-bs-toggle="pill" data-bs-target="#videos-pane" type="button" role="tab" aria-controls="videos-pane" aria-selected="false">
+                    <i class="bi bi-camera-video fs-5 text-danger"></i>
+                    <span>Videos (@videoFiles.Count)</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="hrTabsContent">
+        <!-- Documents Pane -->
+        <div class="tab-pane fade show active" id="docs-pane" role="tabpanel" aria-labelledby="docs-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold text-secondary mb-0">Documents (PDF, Word, Excel & Text)</h4>
+            </div>
+            @if (!docFiles.Any())
+            {
+                @RenderEmptyState("No documents uploaded yet.")
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var file in docFiles)
+                    {
+                        @RenderDocumentCard(file, formatSize)
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Photos Pane -->
+        <div class="tab-pane fade" id="photos-pane" role="tabpanel" aria-labelledby="photos-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold text-secondary mb-0">Photos</h4>
+            </div>
+            @if (!photoFiles.Any())
+            {
+                @RenderEmptyState("No photos uploaded yet.")
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var file in photoFiles)
+                    {
+                        @RenderMediaCard(file, formatSize)
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Videos Pane -->
+        <div class="tab-pane fade" id="videos-pane" role="tabpanel" aria-labelledby="videos-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold text-secondary mb-0">Videos</h4>
+            </div>
+            @if (!videoFiles.Any())
+            {
+                @RenderEmptyState("No videos uploaded yet.")
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var file in videoFiles)
+                    {
+                        @RenderMediaCard(file, formatSize)
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Main Pane: Announcements -->
+<div class="main-pane-content @(activeMainTab == "Announcements" ? "active" : "")" id="main-pane-Announcements">
+    
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        @using (Html.BeginForm("GenerateJson", "HrAnnouncement", null, FormMethod.Post, new { @class = "d-inline", id = "generateJsonForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-info">
+                <i class="bi bi-filetype-json me-1"></i>Generate JSON
+            </button>
+        }
+        <a href="@Url.Action("Create", "HrAnnouncement")" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Create New
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0" id="announcementsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4 text-center" style="width: 60px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" title="Select / Deselect All" style="cursor: pointer;" />
+                        </th>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Short Description</th>
+                        <th>Page Title</th>
+                        <th class="pe-4 text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (announcements == null || !announcements.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-folder-x fs-1 d-block mb-2 text-opacity-50"></i>
+                                No HR announcements found. Click "Create New" to add one.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in announcements)
+                        {
+                            <tr>
+                                <td class="ps-4 text-center">
+                                    <input type="checkbox" class="form-check-input row-checkbox" data-id="@item.ID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                                </td>
+                                <td class="fw-semibold text-dark">@item.Title</td>
+                                <td class="text-secondary">@item.Date.ToString("yyyy-MM-dd")</td>
+                                <td class="text-secondary text-truncate" style="max-width: 250px;">@item.ShortDescription</td>
+                                <td class="text-secondary">@item.PageTitle</td>
+                                <td class="pe-4 text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="@Url.Action("Edit", "HrAnnouncement", new { id = item.ID })" class="btn btn-outline-primary btn-sm px-3" title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        @using (Html.BeginForm("Delete", "HrAnnouncement", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline", onsubmit = "return showDeleteConfirm(this, 'Are you sure you want to delete this HR announcement? This action cannot be undone.');" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Unified Upload File Modal with Progress Bar -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-labelledby="uploadFileModalLabel" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            @using (Html.BeginForm("Upload", "Hr", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadFileModalLabel">
+                        <i class="bi bi-cloud-arrow-up me-2"></i>Upload Files
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="uploadCloseBtn"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- File Input -->
+                    <div class="mb-3">
+                        <label for="uploadFileInput" class="form-label small fw-medium">Select Files (Images, Videos, PDFs, Word, Excel, Text) <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control form-control-sm" id="uploadFileInput" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.mp4,.mov,.avi,.mkv,.jpg,.jpeg,.png,.gif,.webp" required />
+                        <div class="form-text">Large images will be automatically compressed to save bandwidth.</div>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div id="uploadProgressContainer" style="display: none;">
+                        <p class="small text-secondary mb-1" id="uploadStatusText">Preparing upload...</p>
+                        <div class="progress" style="height: 10px;">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <!-- Client-side error area -->
+                    <div id="uploadModalError" class="alert alert-danger small py-2 mt-3" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" id="uploadCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="uploadSubmitBtn">
+                        <i class="bi bi-upload me-1"></i>Upload
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Media Viewer Overlay -->
+<div class="viewer-overlay" id="mediaViewer">
+    <button class="viewer-close" id="viewerClose"><i class="bi bi-x-lg"></i></button>
+    <img id="viewerImg" src="" alt="" style="display:none;">
+    <video id="viewerVid" controls style="display:none;"></video>
+    <div class="viewer-title" id="viewerTitle"></div>
+</div>
+
+@helper RenderEmptyState(string message)
+{
+    <div class="card text-center py-5 border border-dashed shadow-sm">
+        <div class="card-body py-4">
+            <i class="bi bi-folder2-open fs-1 text-secondary text-opacity-50 mb-2"></i>
+            <p class="text-secondary mb-0">@message</p>
+        </div>
+    </div>
+}
+
+@helper RenderDocumentCard(CyberPulseAdministration.Models.HrFile file, Func<long, string> formatSize)
+{
+    string iconClass = file.FileType == "pdf" ? "bi-file-pdf text-danger" : 
+                       (file.FileType == "word" ? "bi-file-word text-primary" : 
+                       (file.FileType == "excel" ? "bi-file-earmark-excel text-success" : "bi-file-text text-secondary"));
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border border-secondary border-opacity-10 shadow-sm hover-card">
+            <div class="card-body d-flex gap-3">
+                <div class="fs-1 flex-shrink-0 d-flex align-items-center">
+                    <i class="bi @iconClass"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0 d-flex flex-column justify-content-center">
+                    <h5 class="fw-bold text-truncate mb-1" title="@file.FileName">
+                        <a href="@Url.Action("Download", "Hr", new { id = file.ID })" class="text-dark text-decoration-none">
+                            @file.FileName
+                        </a>
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2 text-secondary small align-items-center">
+                        <span>Size: <strong>@formatSize(file.FileSize)</strong></span>
+                        <span class="text-opacity-25">|</span>
+                        <span>Date: <strong>@file.UploadDate.ToString("yyyy-MM-dd")</strong></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light p-0 border-top border-secondary border-opacity-10">
+                @using (Html.BeginForm("Delete", "Hr", new { id = file.ID }, FormMethod.Post, new { @class = "w-100 m-0", onsubmit = "return showDeleteConfirm(this, 'Are you sure you want to delete this document? This action cannot be undone.');" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger w-100 rounded-0 rounded-bottom border-0 py-2">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@helper RenderMediaCard(CyberPulseAdministration.Models.HrFile file, Func<long, string> formatSize)
+{
+    <div class="col-md-6 col-lg-4 col-xl-3">
+        <div class="card h-100 border border-secondary border-opacity-10 shadow-sm hover-card d-flex flex-column">
+            
+            <div class="media-thumbnail-container flex-shrink-0" onclick="openMediaModal('@file.FilePath', '@file.FileType', '@HttpUtility.JavaScriptStringEncode(file.FileName)')">
+                @if (file.FileType == "photo")
+                {
+                    <img src="@file.FilePath" alt="@file.FileName" loading="lazy" />
+                }
+                else if (file.FileType == "video")
+                {
+                    <video src="@file.FilePath#t=0.1" preload="metadata"></video>
+                    <i class="bi bi-play-circle-fill play-overlay"></i>
+                }
+            </div>
+            
+            <div class="card-body py-2 px-3 flex-grow-1 d-flex flex-column justify-content-center">
+                <h6 class="fw-semibold text-dark text-truncate mb-1" title="@file.FileName">@file.FileName</h6>
+                <div class="d-flex justify-content-between text-secondary small">
+                    <span>@formatSize(file.FileSize)</span>
+                    <span>@file.UploadDate.ToString("MMM dd, yyyy")</span>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-light p-0 border-top border-secondary border-opacity-10">
+                @using (Html.BeginForm("Delete", "Hr", new { id = file.ID }, FormMethod.Post, new { @class = "w-100 m-0", onsubmit = "return showDeleteConfirm(this, 'Are you sure you want to delete this media? This action cannot be undone.');" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger w-100 rounded-0 rounded-bottom border-0 py-1">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script type="text/javascript">
+    // --- Main Tab Switching (History API & Fade) ---
+    function switchMainTab(tabId, url, pushState = true) {
+        var isAnnouncements = tabId === 'Announcements';
+        document.getElementById('sectionHeading').textContent = isAnnouncements ? 'HR Announcements' : 'HR Portal Files';
+        document.getElementById('sectionDescription').textContent = isAnnouncements ? 'Create and manage HR announcements.' : 'Upload and manage employee documents, templates, videos, and photos.';
+        document.title = (isAnnouncements ? 'HR Announcements' : 'HR Portal') + ' - CyberPulse Admin Portal';
+
+        // Deactivate all main tabs and panes
+        document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+        var currentActivePane = document.querySelector('.main-pane-content.active');
+        
+        // Highlight clicked tab
+        document.getElementById('main-tab-' + tabId).classList.add('active');
+
+        // Show/hide upload button based on tab
+        var uploadBtn = document.getElementById('uploadBtn');
+        if (uploadBtn) {
+            uploadBtn.style.display = (tabId === 'Documents') ? '' : 'none';
+        }
+
+        var newPane = document.getElementById('main-pane-' + tabId);
+
+        if (currentActivePane && currentActivePane !== newPane) {
+            // Fade out
+            currentActivePane.style.opacity = '0';
+            setTimeout(function() {
+                currentActivePane.classList.remove('active');
+                
+                // Fade in new pane
+                newPane.classList.add('active');
+                setTimeout(function() {
+                    newPane.style.opacity = '1';
+                }, 20);
+            }, 200); // 200ms matches css transition
+        } else if (!currentActivePane) {
+            newPane.classList.add('active');
+            newPane.style.opacity = '1';
+        }
+
+        // Update URL
+        if (pushState && url) {
+            history.pushState({ tabId: tabId }, '', url);
+        }
+    }
+
+    // Handle popstate for back/forward
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.tabId) {
+            var url = (e.state.tabId === 'Documents') ? '@Url.Action("Documents", "Hr")' : '@Url.Action("Announcements", "Hr")';
+            switchMainTab(e.state.tabId, url, false);
+        } else {
+            var path = window.location.pathname.toLowerCase();
+            if (path.indexOf('/announcements') > -1) {
+                switchMainTab('Announcements', null, false);
+            } else {
+                switchMainTab('Documents', null, false);
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var alerts = document.querySelectorAll('.alert:not(#uploadModalError)');
+        if (alerts.length > 0) {
+            setTimeout(function() {
+                alerts.forEach(function(alert) {
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(function() { alert.remove(); }, 500);
+                });
+            }, 3000);
+        }
+
+        if (!history.state || !history.state.tabId) {
+            history.replaceState({ tabId: '@activeMainTab' }, '', window.location.href);
+        }
+
+        // --- Announcements Logic ---
+        var selectAll = document.getElementById("selectAll");
+        var rowCheckboxes = document.querySelectorAll(".row-checkbox");
+
+        function updateSelectAllState() {
+            if (!selectAll || rowCheckboxes.length === 0) return;
+            var allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+            var someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+            selectAll.checked = allChecked;
+            selectAll.indeterminate = someChecked && !allChecked;
+        }
+        updateSelectAllState();
+
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                var isChecked = selectAll.checked;
+                rowCheckboxes.forEach(cb => cb.checked = isChecked);
+            });
+        }
+        rowCheckboxes.forEach(cb => cb.addEventListener("change", updateSelectAllState));
+
+        var generateForm = document.getElementById("generateJsonForm");
+        if (generateForm) {
+            generateForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                var token = generateForm.querySelector('input[name="__RequestVerificationToken"]').value;
+                var allCbs = document.querySelectorAll(".row-checkbox");
+                var checkedIds = [];
+                var uncheckedIds = [];
+
+                allCbs.forEach(cb => {
+                    var id = parseInt(cb.getAttribute("data-id"));
+                    if (cb.checked) checkedIds.push(id);
+                    else uncheckedIds.push(id);
+                });
+
+                var requests = [];
+                if (checkedIds.length > 0) {
+                    var activateData = new URLSearchParams();
+                    activateData.append('__RequestVerificationToken', token);
+                    activateData.append('isActive', 'true');
+                    checkedIds.forEach(id => activateData.append('ids', id));
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "HrAnnouncement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: activateData.toString()
+                    }));
+                }
+
+                if (uncheckedIds.length > 0) {
+                    var deactivateData = new URLSearchParams();
+                    deactivateData.append('__RequestVerificationToken', token);
+                    deactivateData.append('isActive', 'false');
+                    uncheckedIds.forEach(id => deactivateData.append('ids', id));
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "HrAnnouncement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: deactivateData.toString()
+                    }));
+                }
+
+                Promise.all(requests).then(function() {
+                    var tempForm = document.createElement('form');
+                    tempForm.method = 'POST';
+                    tempForm.action = generateForm.action;
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token;
+                    tempForm.appendChild(tokenInput);
+                    document.body.appendChild(tempForm);
+                    tempForm.submit();
+                }).catch(function(err) {
+                    console.error('Failed to sync announcement states', err);
+                    alert('An error occurred while saving selections.');
+                });
+            });
+        }
+    });
+
+    // --- Media Viewer Overlay Logic ---
+    var mediaViewer = document.getElementById('mediaViewer');
+    var viewerImg = document.getElementById('viewerImg');
+    var viewerVid = document.getElementById('viewerVid');
+    var viewerTitle = document.getElementById('viewerTitle');
+    var viewerClose = document.getElementById('viewerClose');
+
+    if (viewerClose) viewerClose.addEventListener('click', closeViewer);
+    if (mediaViewer) mediaViewer.addEventListener('click', function(e) { if (e.target === mediaViewer) closeViewer(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeViewer(); });
+
+    window.openMediaModal = function(url, type, title) {
+        viewerTitle.textContent = title || '';
+        if (type === 'photo') {
+            viewerVid.style.display = 'none';
+            viewerVid.pause();
+            viewerVid.src = '';
+            viewerImg.src = url;
+            viewerImg.style.display = 'block';
+        } else if (type === 'video') {
+            viewerImg.style.display = 'none';
+            viewerImg.src = '';
+            viewerVid.src = url;
+            viewerVid.style.display = 'block';
+            viewerVid.play().catch(function(e) { console.log('Autoplay blocked', e); });
+        }
+        mediaViewer.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function closeViewer() {
+        if (!mediaViewer) return;
+        mediaViewer.classList.remove('open');
+        viewerVid.pause();
+        viewerVid.src = '';
+        viewerImg.src = '';
+        document.body.style.overflow = '';
+    }
+
+    // --- Upload Logic (AJAX with progress bar, fallback to regular form POST) ---
+    (function() {
+        var uploadForm   = document.getElementById('uploadForm');
+        var fileInput    = document.getElementById('uploadFileInput');
+        var submitBtn    = document.getElementById('uploadSubmitBtn');
+        var errorDiv     = document.getElementById('uploadModalError');
+        var progressContainer = document.getElementById('uploadProgressContainer');
+        var progressBar  = document.getElementById('uploadProgressBar');
+        var statusText   = document.getElementById('uploadStatusText');
+        var uploadCloseBtn = document.getElementById('uploadCloseBtn');
+        var uploadCancelBtn= document.getElementById('uploadCancelBtn');
+
+        if (!uploadForm) return;
+
+        var maxImageWidth = 1920;
+        var maxImageHeight = 1080;
+        var compressionQuality = 0.8;
+        var compressThresholdMB = 2;
+        var useAjax = true;
+
+        uploadForm.addEventListener('submit', function(e) {
+            if (!fileInput.files || fileInput.files.length === 0) return;
+
+            var needsCompression = false;
+            for (var i = 0; i < fileInput.files.length; i++) {
+                if (fileInput.files[i].type.startsWith('image/') && fileInput.files[i].size > compressThresholdMB * 1024 * 1024) {
+                    needsCompression = true;
+                    break;
+                }
+            }
+
+            if (!needsCompression && !useAjax) return;
+            e.preventDefault();
+
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            fileInput.disabled = true;
+            uploadCloseBtn.disabled = true;
+            uploadCancelBtn.disabled = true;
+            
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Preparing files...';
+
+            processAndUpload();
+        });
+
+        async function processAndUpload() {
+            try {
+                var formData = new FormData();
+                var tokenElement = uploadForm.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenElement) formData.append('__RequestVerificationToken', tokenElement.value);
+
+                var totalFiles = fileInput.files.length;
+                for (var i = 0; i < totalFiles; i++) {
+                    var file = fileInput.files[i];
+                    statusText.textContent = 'Processing file ' + (i+1) + ' of ' + totalFiles + ': ' + file.name + '...';
+                    
+                    if (file.type.startsWith('image/') && file.size > compressThresholdMB * 1024 * 1024) {
+                        try {
+                            var compressedBlob = await compressImage(file);
+                            formData.append('files', compressedBlob, file.name);
+                        } catch (err) {
+                            console.error('Compression failed for', file.name, err);
+                            formData.append('files', file);
+                        }
+                    } else {
+                        formData.append('files', file);
+                    }
+                }
+
+                statusText.textContent = 'Uploading...';
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', uploadForm.action, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                
+                xhr.upload.onprogress = function(ev) {
+                    if (ev.lengthComputable) {
+                        var percentComplete = (ev.loaded / ev.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                        statusText.textContent = 'Uploading... ' + Math.round(percentComplete) + '%';
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.success) {
+                                statusText.textContent = "Upload complete! Refreshing...";
+                                progressBar.classList.remove('progress-bar-animated');
+                                progressBar.classList.add('bg-success');
+                                progressBar.style.width = '100%';
+                                setTimeout(function() { window.location.reload(); }, 500);
+                            } else {
+                                showError(response.message || "Upload failed.");
+                                resetUploadUI();
+                            }
+                        } catch (parseErr) {
+                            useAjax = false;
+                            fileInput.disabled = false;
+                            uploadForm.submit();
+                        }
+                    } else {
+                        showError("Server error: " + xhr.status + ". Please try again.");
+                        resetUploadUI();
+                    }
+                };
+
+                xhr.onerror = function() {
+                    useAjax = false;
+                    fileInput.disabled = false;
+                    uploadForm.submit();
+                };
+                xhr.send(formData);
+            } catch (err) {
+                fileInput.disabled = false;
+                uploadForm.submit();
+            }
+        }
+
+        var modalEl = document.getElementById('uploadFileModal');
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            fileInput.value = '';
+            errorDiv.style.display = 'none';
+            progressContainer.style.display = 'none';
+            resetUploadUI();
+        });
+
+        function resetUploadUI() {
+            submitBtn.disabled = false;
+            fileInput.disabled = false;
+            uploadCloseBtn.disabled = false;
+            uploadCancelBtn.disabled = false;
+            progressBar.style.width = '0%';
+            progressBar.classList.remove('bg-success');
+            progressBar.classList.add('progress-bar-animated');
+            progressContainer.style.display = 'none';
+        }
+
+        function showError(msg) {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+        }
+
+        function compressImage(file) {
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    var img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        var width = img.width;
+                        var height = img.height;
+                        if (width > maxImageWidth) {
+                            height = Math.round(height * (maxImageWidth / width));
+                            width = maxImageWidth;
+                        }
+                        if (height > maxImageHeight) {
+                            width = Math.round(width * (maxImageHeight / height));
+                            height = maxImageHeight;
+                        }
+                        var canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        var outType = 'image/jpeg';
+                        if (file.type === 'image/png') outType = 'image/png';
+                        else if (file.type === 'image/webp') outType = 'image/webp';
+
+                        canvas.toBlob(function(blob) {
+                            if (blob) resolve(blob);
+                            else reject(new Error('Canvas to Blob failed'));
+                        }, outType, compressionQuality);
+                    };
+                    img.onerror = function() { reject(new Error('Failed to load image for compression')); };
+                };
+                reader.onerror = function(error) { reject(error); };
+            });
+        }
+    })();
+</script>
+}

@@ -1,0 +1,203 @@
+@model IEnumerable<CyberPulseAdministration.Models.Announcement>
+
+@{
+    ViewBag.Title = "Announcements Panel";
+}
+
+<!-- Page Header -->
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <h2>Announcements Management</h2>
+        <p>Manage, publish and export internal communication records.</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        @using (Html.BeginForm("GenerateJson", "Announcement", null, FormMethod.Post, new { @class = "d-inline", id = "generateJsonForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-info">
+                <i class="bi bi-filetype-json me-1"></i>Generate JSON
+            </button>
+        }
+        <a href="@Url.Action("Create", "Announcement")" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Create New
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Content Card -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0" id="announcementsTable">
+            <thead>
+                <tr>
+                    <th class="ps-4 text-center" style="width: 60px;">
+                        <input type="checkbox" class="form-check-input" id="selectAll" title="Select / Deselect All" style="cursor: pointer;" />
+                    </th>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Short Description</th>
+                    <th>Page Title</th>
+                    <th class="pe-4 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model == null || !Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-secondary">
+                            <i class="bi bi-folder-x fs-1 d-block mb-2 text-opacity-50"></i>
+                            No announcements found. Click "Create New" to add one.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 text-center">
+                                <input type="checkbox" class="form-check-input row-checkbox" data-id="@item.ID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                            </td>
+                            <td class="fw-semibold text-dark">@item.Title</td>
+                            <td class="text-secondary">@item.Date.ToString("yyyy-MM-dd")</td>
+                            <td class="text-secondary text-truncate" style="max-width: 250px;">@item.ShortDescription</td>
+                            <td class="text-secondary">@item.PageTitle</td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="@Url.Action("Edit", "Announcement", new { id = item.ID })" class="btn btn-outline-primary btn-sm px-3" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    @using (Html.BeginForm("Delete", "Announcement", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline", onsubmit = "return showDeleteConfirm(this, 'Are you sure you want to delete this announcement? This action cannot be undone.');" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var selectAll = document.getElementById("selectAll");
+        var rowCheckboxes = document.querySelectorAll(".row-checkbox");
+
+        function updateSelectAllState() {
+            if (!selectAll || rowCheckboxes.length === 0) return;
+            var allChecked = Array.from(rowCheckboxes).every(function(cb) { return cb.checked; });
+            var someChecked = Array.from(rowCheckboxes).some(function(cb) { return cb.checked; });
+            selectAll.checked = allChecked;
+            selectAll.indeterminate = someChecked && !allChecked;
+        }
+
+        // Set initial state
+        updateSelectAllState();
+
+        // Select All — pure UI, instant, no server requests
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                var isChecked = selectAll.checked;
+                rowCheckboxes.forEach(function(cb) {
+                    cb.checked = isChecked;
+                });
+            });
+        }
+
+        // Individual checkbox — just update the select-all header state
+        rowCheckboxes.forEach(function(cb) {
+            cb.addEventListener("change", updateSelectAllState);
+        });
+
+        // Generate JSON — first sync all checkbox states to server, then generate
+        var generateForm = document.getElementById("generateJsonForm");
+        if (generateForm) {
+            generateForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                var token = generateForm.querySelector('input[name="__RequestVerificationToken"]').value;
+                var allCbs = document.querySelectorAll(".row-checkbox");
+                var checkedIds = [];
+                var uncheckedIds = [];
+
+                allCbs.forEach(function(cb) {
+                    var id = parseInt(cb.getAttribute("data-id"));
+                    if (cb.checked) {
+                        checkedIds.push(id);
+                    } else {
+                        uncheckedIds.push(id);
+                    }
+                });
+
+                // Build sync requests
+                var requests = [];
+
+                if (checkedIds.length > 0) {
+                    var activateData = new URLSearchParams();
+                    activateData.append('__RequestVerificationToken', token);
+                    activateData.append('isActive', 'true');
+                    checkedIds.forEach(function(id) { activateData.append('ids', id); });
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "Announcement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: activateData.toString()
+                    }));
+                }
+
+                if (uncheckedIds.length > 0) {
+                    var deactivateData = new URLSearchParams();
+                    deactivateData.append('__RequestVerificationToken', token);
+                    deactivateData.append('isActive', 'false');
+                    uncheckedIds.forEach(function(id) { deactivateData.append('ids', id); });
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "Announcement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: deactivateData.toString()
+                    }));
+                }
+
+                // After syncing, submit the actual GenerateJson form
+                Promise.all(requests).then(function() {
+                    // Submit natively (bypass this listener)
+                    var tempForm = document.createElement('form');
+                    tempForm.method = 'POST';
+                    tempForm.action = generateForm.action;
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token;
+                    tempForm.appendChild(tokenInput);
+                    document.body.appendChild(tempForm);
+                    tempForm.submit();
+                }).catch(function(err) {
+                    console.error('Failed to sync announcement states', err);
+                    alert('An error occurred while saving selections.');
+                });
+            });
+        }
+    });
+</script>

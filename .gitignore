@@ -1,0 +1,36 @@
+# ---- Node (CyberPulsePortal) ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# ---- .NET (CyberPulseAdministration) ----
+bin/
+obj/
+packages/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# ---- Runtime / user data ----
+CyberPulseAdministration/Uploads/
+CyberPulseAdministration/JsonOutput/
+Photo_Video/
+
+# ---- Claude Code local settings ----
+**/.claude/settings.local.json
+
+# ---- Editor ----
+.vscode/*
+!.vscode/extensions.json
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Env / secrets ----
+.env
+.env.local

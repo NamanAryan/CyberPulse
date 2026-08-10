@@ -1,0 +1,630 @@
+@{
+    Func<long, string> formatSize = (bytes) =>
+    {
+        if (bytes == 0) return "0 B";
+        string[] suffixes = { "B", "KB", "MB", "GB" };
+        int counter = 0;
+        decimal number = bytes;
+        while (Math.Round(number / 1024) >= 1) { number /= 1024; counter++; }
+        return string.Format("{0:n1} {1}", number, suffixes[counter]);
+    };
+
+    // Determine active document tab from TempData (set after upload/delete)
+    string activeDocTab = TempData["ActiveTab"] as string ?? "QualityManual";
+    string activeMainTab = ViewBag.ActiveMainTab as string ?? "Documents";
+    
+    var announcements = ViewBag.Announcements as IEnumerable<CyberPulseAdministration.Models.QualityAnnouncement>;
+    ViewBag.Title = activeMainTab == "Announcements" ? "Quality Announcements" : "Quality Inside";
+}
+
+<style>
+    /* Tab Navigation Styles (Main Tabs) */
+    .main-tab-nav {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .main-tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6c757d;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+    .main-tab-btn:hover {
+        color: #1565c0;
+    }
+    .main-tab-btn.active {
+        color: #1565c0;
+        border-bottom-color: #1565c0;
+    }
+
+    /* Tab Transition */
+    .main-pane-content {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .main-pane-content.active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Document inner tabs (Original QualityInside styles) */
+    .quality-tab-nav {
+        display: flex;
+        flex-direction: row;
+        gap: 0;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 24px;
+    }
+    .quality-tab-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 14px 10px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        color: #1565c0;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .quality-tab-btn i { font-size: 20px; }
+    .quality-tab-btn:hover { background: #f0f4ff; }
+    .quality-tab-btn.active {
+        background: #1565c0;
+        color: #fff;
+        border-radius: 6px 6px 0 0;
+        border-bottom-color: #1565c0;
+    }
+    .quality-tab-btn.active i { color: #fff; }
+
+    .section-panel {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .section-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .section-panel-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 14px;
+        color: #1a1a2e;
+    }
+    .file-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .file-table th {
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #dee2e6;
+        background: #f8f9fa;
+    }
+    .file-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+        color: #333;
+    }
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover td { background: #f8f9fa; }
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #aaa;
+    }
+    .empty-state i { font-size: 36px; display: block; margin-bottom: 8px; }
+    .btn-upload-sm {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+    .tab-pane-content { display: none; }
+    .tab-pane-content.active { display: block; }
+</style>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="fw-bold mb-1" id="sectionHeading">@(activeMainTab == "Announcements" ? "Quality Announcements" : "Quality Inside")</h2>
+        <p class="text-secondary mb-0 small" id="sectionDescription">@(activeMainTab == "Announcements" ? "Create and manage quality announcements." : "Manage your Quality Core documents.")</p>
+    </div>
+</div>
+
+<!-- Alerts -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Main Tab Navigation -->
+<div class="main-tab-nav">
+    <button class="main-tab-btn @(activeMainTab == "Documents" ? "active" : "")" id="main-tab-Documents" onclick="switchMainTab('Documents', '@Url.Action("Documents", "Quality")')">
+        <i class="bi bi-file-earmark-text me-1"></i> Documents
+    </button>
+    <button class="main-tab-btn @(activeMainTab == "Announcements" ? "active" : "")" id="main-tab-Announcements" onclick="switchMainTab('Announcements', '@Url.Action("Announcements", "Quality")')">
+        <i class="bi bi-megaphone me-1"></i> Announcements
+    </button>
+</div>
+
+<!-- Main Pane: Documents -->
+<div class="main-pane-content @(activeMainTab == "Documents" ? "active" : "")" id="main-pane-Documents">
+
+    <!-- Hidden upload forms for Documents -->
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-QualityManual", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="QualityManual" />
+        <input type="file" id="input-QualityManual" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-QualitySystemProcedure", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="QualitySystemProcedure" />
+        <input type="file" id="input-QualitySystemProcedure" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-QualityStandard", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="QualityStandardGuidelines/QualityStandard" />
+        <input type="file" id="input-QualityStandard" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-Guidelines", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="QualityStandardGuidelines/Guidelines" />
+        <input type="file" id="input-Guidelines" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-Template", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="TemplateFormChecklist/Template" />
+        <input type="file" id="input-Template" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-Form", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="TemplateFormChecklist/Form" />
+        <input type="file" id="input-Form" name="files" multiple onchange="this.form.submit();" />
+    }
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-Checklist", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="TemplateFormChecklist/Checklist" />
+        <input type="file" id="input-Checklist" name="files" multiple onchange="this.form.submit();" />
+    }
+
+    <!-- Tab Navigation (Inner Documents) -->
+    <div class="quality-tab-nav shadow-sm" style="background:#fff; border-radius:6px 6px 0 0; border:1px solid #dee2e6; border-bottom:none; overflow:hidden;">
+        <button class="quality-tab-btn" id="tab-btn-QualityManual" onclick="showDocTab('QualityManual')">
+            <i class="bi bi-journal-text"></i> Quality Manual
+        </button>
+        <button class="quality-tab-btn" id="tab-btn-QualitySystemProcedure" onclick="showDocTab('QualitySystemProcedure')">
+            <i class="bi bi-diagram-3"></i> Quality System Procedure
+        </button>
+        <button class="quality-tab-btn" id="tab-btn-QualityStandardGuidelines" onclick="showDocTab('QualityStandardGuidelines')">
+            <i class="bi bi-shield-check"></i> Quality Standard & Guidelines
+        </button>
+        <button class="quality-tab-btn" id="tab-btn-TemplateFormChecklist" onclick="showDocTab('TemplateFormChecklist')">
+            <i class="bi bi-file-earmark-check"></i> Template / Form / Checklist
+        </button>
+    </div>
+
+    <!-- Quality Manual -->
+    <div class="tab-pane-content" id="pane-QualityManual">
+        @RenderSingleSection("Quality Manual", ViewBag.ManualFiles, "QualityManual", formatSize)
+    </div>
+
+    <!-- System Procedure -->
+    <div class="tab-pane-content" id="pane-QualitySystemProcedure">
+        @RenderSingleSection("Quality System Procedure", ViewBag.SystemFiles, "QualitySystemProcedure", formatSize)
+    </div>
+
+    <!-- Standard & Guidelines -->
+    <div class="tab-pane-content" id="pane-QualityStandardGuidelines">
+        <div class="row g-3">
+            <div class="col-md-6">
+                @RenderSingleSection("Quality Standard", ViewBag.QualityStandardFiles, "QualityStandard", formatSize)
+            </div>
+            <div class="col-md-6">
+                @RenderSingleSection("Guidelines", ViewBag.GuidelinesFiles, "Guidelines", formatSize)
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates / Forms / Checklists -->
+    <div class="tab-pane-content" id="pane-TemplateFormChecklist">
+        <div class="row g-3">
+            <div class="col-md-4">
+                @RenderSingleSection("Templates", ViewBag.TemplateFiles, "Template", formatSize)
+            </div>
+            <div class="col-md-4">
+                @RenderSingleSection("Forms", ViewBag.FormFiles, "Form", formatSize)
+            </div>
+            <div class="col-md-4">
+                @RenderSingleSection("Checklists", ViewBag.ChecklistFiles, "Checklist", formatSize)
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Main Pane: Announcements -->
+<div class="main-pane-content @(activeMainTab == "Announcements" ? "active" : "")" id="main-pane-Announcements">
+    
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        @using (Html.BeginForm("GenerateJson", "QualityAnnouncement", null, FormMethod.Post, new { @class = "d-inline", id = "generateJsonForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-info">
+                <i class="bi bi-filetype-json me-1"></i>Generate JSON
+            </button>
+        }
+        <a href="@Url.Action("Create", "QualityAnnouncement")" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Create New
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0" id="announcementsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4 text-center" style="width: 60px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll" title="Select / Deselect All" style="cursor: pointer;" />
+                        </th>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Short Description</th>
+                        <th>Page Title</th>
+                        <th class="pe-4 text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (announcements == null || !announcements.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-folder-x fs-1 d-block mb-2 text-opacity-50"></i>
+                                No quality announcements found. Click "Create New" to add one.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in announcements)
+                        {
+                            <tr>
+                                <td class="ps-4 text-center">
+                                    <input type="checkbox" class="form-check-input row-checkbox" data-id="@item.ID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                                </td>
+                                <td class="fw-semibold text-dark">@item.Title</td>
+                                <td class="text-secondary">@item.Date.ToString("yyyy-MM-dd")</td>
+                                <td class="text-secondary text-truncate" style="max-width: 250px;">@item.ShortDescription</td>
+                                <td class="text-secondary">@item.PageTitle</td>
+                                <td class="pe-4 text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="@Url.Action("Edit", "QualityAnnouncement", new { id = item.ID })" class="btn btn-outline-primary btn-sm px-3" title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        @using (Html.BeginForm("Delete", "QualityAnnouncement", new { id = item.ID }, FormMethod.Post, new { @class = "d-inline", onsubmit = "return showDeleteConfirm(this, 'Are you sure you want to delete this quality announcement? This action cannot be undone.');" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@helper RenderSingleSection(string title, List<CyberPulseAdministration.Controllers.QualityFile> files, string uploadKey, Func<long, string> formatSize)
+{
+    <div class="section-panel">
+        <div class="section-panel-header">
+            <h6>@title</h6>
+            <button class="btn btn-primary btn-sm btn-upload-sm" onclick="document.getElementById('input-@uploadKey').click()">
+                <i class="bi bi-cloud-arrow-up me-1"></i> Upload
+            </button>
+        </div>
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Upload Date</th>
+                    <th>Size</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (files == null || !files.Any())
+                {
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-folder2-open"></i>
+                                No files uploaded yet.
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var file in files)
+                    {
+                        var underscoreIdx = file.FileName.IndexOf('_');
+                        var displayName = (underscoreIdx >= 0 && underscoreIdx == 36)
+                            ? file.FileName.Substring(37)
+                            : file.FileName;
+
+                        <tr>
+                            <td>
+                                <a href="@Url.Action("Download", "Quality", new { tab = GetTabPath(uploadKey), fileName = file.FileName })" class="text-dark text-decoration-none" title="@displayName">
+                                    @(displayName.Length > 45 ? displayName.Substring(0, 42) + "..." : displayName)
+                                </a>
+                            </td>
+                            <td class="text-secondary">@file.UploadDate.ToString("yyyy-MM-dd")</td>
+                            <td class="text-secondary">@formatSize(file.FileSize)</td>
+                            <td>
+                                @using (Html.BeginForm("Delete", "Quality", new { tab = GetTabPath(uploadKey), fileName = file.FileName }, FormMethod.Post, new { style = "display:inline", onsubmit = "return confirm('Delete this file?');" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:12px;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@functions {
+    public static string GetTabPath(string key)
+    {
+        switch (key)
+        {
+            case "QualityManual": return "QualityManual";
+            case "QualitySystemProcedure": return "QualitySystemProcedure";
+            case "QualityStandard": return "QualityStandardGuidelines/QualityStandard";
+            case "Guidelines": return "QualityStandardGuidelines/Guidelines";
+            case "Template": return "TemplateFormChecklist/Template";
+            case "Form": return "TemplateFormChecklist/Form";
+            case "Checklist": return "TemplateFormChecklist/Checklist";
+            default: return key;
+        }
+    }
+}
+
+@section Scripts {
+<script>
+    // --- Main Tab Switching (History API & Fade) ---
+    function switchMainTab(tabId, url, pushState = true) {
+        var isAnnouncements = tabId === 'Announcements';
+        document.getElementById('sectionHeading').textContent = isAnnouncements ? 'Quality Announcements' : 'Quality Inside';
+        document.getElementById('sectionDescription').textContent = isAnnouncements ? 'Create and manage quality announcements.' : 'Manage your Quality Core documents.';
+        document.title = (isAnnouncements ? 'Quality Announcements' : 'Quality Inside') + ' - CyberPulse Admin Portal';
+
+        // Deactivate all main tabs and panes
+        document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+        var currentActivePane = document.querySelector('.main-pane-content.active');
+        
+        // Highlight clicked tab
+        document.getElementById('main-tab-' + tabId).classList.add('active');
+
+        var newPane = document.getElementById('main-pane-' + tabId);
+
+        if (currentActivePane && currentActivePane !== newPane) {
+            // Fade out
+            currentActivePane.style.opacity = '0';
+            setTimeout(function() {
+                currentActivePane.classList.remove('active');
+                
+                // Fade in new pane
+                newPane.classList.add('active');
+                // Small delay to allow display:block to apply before animating opacity
+                setTimeout(function() {
+                    newPane.style.opacity = '1';
+                }, 20);
+            }, 200); // 200ms matches css transition
+        } else if (!currentActivePane) {
+            newPane.classList.add('active');
+            newPane.style.opacity = '1';
+        }
+
+        // Update URL
+        if (pushState && url) {
+            history.pushState({ tabId: tabId }, '', url);
+        }
+    }
+
+    // Handle back/forward buttons
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.tabId) {
+            var url = (e.state.tabId === 'Documents') ? '@Url.Action("Documents", "Quality")' : '@Url.Action("Announcements", "Quality")';
+            switchMainTab(e.state.tabId, url, false);
+        } else {
+            // Default based on url
+            var path = window.location.pathname.toLowerCase();
+            if (path.indexOf('/announcements') > -1) {
+                switchMainTab('Announcements', null, false);
+            } else {
+                switchMainTab('Documents', null, false);
+            }
+        }
+    });
+
+
+    // --- Document Inner Tab Switching ---
+    var activeDocTabKey = '@activeDocTab';
+    var docTabMapping = {
+        'QualityManual': 'QualityManual',
+        'QualitySystemProcedure': 'QualitySystemProcedure',
+        'QualityStandardGuidelines': 'QualityStandardGuidelines',
+        'TemplateFormChecklist': 'TemplateFormChecklist'
+    };
+
+    function showDocTab(tabKey) {
+        document.querySelectorAll('.tab-pane-content').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.quality-tab-btn').forEach(b => b.classList.remove('active'));
+        
+        var pane = document.getElementById('pane-' + tabKey);
+        if (pane) pane.classList.add('active');
+        var btn = document.getElementById('tab-btn-' + tabKey);
+        if (btn) btn.classList.add('active');
+        
+        sessionStorage.setItem('qualityDocActiveTab', tabKey);
+    }
+
+    // --- Initialization & Events ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Doc Tabs
+        var serverTab = docTabMapping[activeDocTabKey] || null;
+        var storedTab = sessionStorage.getItem('qualityDocActiveTab');
+        var tabToShow = serverTab || storedTab || 'QualityManual';
+        showDocTab(tabToShow);
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(a) {
+                a.style.transition = 'opacity 0.5s';
+                a.style.opacity = '0';
+                setTimeout(function() { a.remove(); }, 500);
+            });
+        }, 3000);
+
+        // Set initial state for history API if not present
+        if (!history.state || !history.state.tabId) {
+            history.replaceState({ tabId: '@activeMainTab' }, '', window.location.href);
+        }
+
+        // --- Announcements Logic (Checkboxes & Generate JSON) ---
+        var selectAll = document.getElementById("selectAll");
+        var rowCheckboxes = document.querySelectorAll(".row-checkbox");
+
+        function updateSelectAllState() {
+            if (!selectAll || rowCheckboxes.length === 0) return;
+            var allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+            var someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+            selectAll.checked = allChecked;
+            selectAll.indeterminate = someChecked && !allChecked;
+        }
+        updateSelectAllState();
+
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                var isChecked = selectAll.checked;
+                rowCheckboxes.forEach(cb => cb.checked = isChecked);
+            });
+        }
+
+        rowCheckboxes.forEach(cb => cb.addEventListener("change", updateSelectAllState));
+
+        var generateForm = document.getElementById("generateJsonForm");
+        if (generateForm) {
+            generateForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                var token = generateForm.querySelector('input[name="__RequestVerificationToken"]').value;
+                var allCbs = document.querySelectorAll(".row-checkbox");
+                var checkedIds = [];
+                var uncheckedIds = [];
+
+                allCbs.forEach(cb => {
+                    var id = parseInt(cb.getAttribute("data-id"));
+                    if (cb.checked) checkedIds.push(id);
+                    else uncheckedIds.push(id);
+                });
+
+                var requests = [];
+
+                if (checkedIds.length > 0) {
+                    var activateData = new URLSearchParams();
+                    activateData.append('__RequestVerificationToken', token);
+                    activateData.append('isActive', 'true');
+                    checkedIds.forEach(id => activateData.append('ids', id));
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "QualityAnnouncement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: activateData.toString()
+                    }));
+                }
+
+                if (uncheckedIds.length > 0) {
+                    var deactivateData = new URLSearchParams();
+                    deactivateData.append('__RequestVerificationToken', token);
+                    deactivateData.append('isActive', 'false');
+                    uncheckedIds.forEach(id => deactivateData.append('ids', id));
+                    requests.push(fetch('@Url.Action("BulkToggleActive", "QualityAnnouncement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: deactivateData.toString()
+                    }));
+                }
+
+                Promise.all(requests).then(function() {
+                    var tempForm = document.createElement('form');
+                    tempForm.method = 'POST';
+                    tempForm.action = generateForm.action;
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token;
+                    tempForm.appendChild(tokenInput);
+                    document.body.appendChild(tempForm);
+                    tempForm.submit();
+                }).catch(function(err) {
+                    console.error('Failed to sync announcement states', err);
+                    alert('An error occurred while saving selections.');
+                });
+            });
+        }
+    });
+</script>
+}
