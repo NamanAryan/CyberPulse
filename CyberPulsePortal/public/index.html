@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberPulse Portal</title>
+    <title>Home - CyberPulse Portal</title>
     <!-- Google Fonts: Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
     <!-- Header Bar -->
@@ -34,6 +34,14 @@
         </div>
     </header>
 
+    <!-- Main Navigation (rendered by portal-shell.js) -->
+    <nav data-portal-nav data-active="home"></nav>
+
+    <!-- Page Banner (rendered by portal-shell.js) -->
+    <div data-portal-banner
+         data-title="Home"
+         data-tagline="Your Daily Pulse of People, Quality and News"></div>
+
     <!-- Main Content Area -->
     <main class="main-content">
         <div class="container portal-container">
@@ -45,55 +53,54 @@
             </div>
 
             <div class="portal-dashboard">
-                <div class="portal-column">
+                <!-- 1. Announcements -->
                 <section class="carousel-section" id="carouselSection" style="display: none;">
-                    <div class="carousel-box"><div class="carousel-header"><span class="carousel-header-title">ANNOUNCEMENTS</span><a href="all.html" class="carousel-header-arrow" id="carouselHeaderArrow" aria-label="View all announcements">&rarr;</a></div><div class="carousel-track-wrapper"><div class="carousel-track" id="carouselTrack"></div></div><div class="carousel-footer"><div class="carousel-indicators" id="carouselIndicators"></div></div></div>
-                </section>
-
-                <section class="carousel-section" id="qualityLinkSection">
                     <div class="carousel-box">
                         <div class="carousel-header">
-                            <span class="carousel-header-title">QUALITY</span>
-                            <a href="quality.html" class="carousel-header-arrow" aria-label="Go to Quality page">&rarr;</a>
+                            <span class="carousel-header-title">ANNOUNCEMENTS</span>
+                            <a href="all.html" class="carousel-header-arrow" id="carouselHeaderArrow" aria-label="View all announcements">&rarr;</a>
                         </div>
-                        <a href="quality.html" style="display:block; padding: 24px; text-align:center; text-decoration:none;">
-                            <i class="bi bi-award" style="font-size:26px; color:var(--purple-700);"></i>
-                            <p style="margin-top:10px; font-size:12.5px; color:var(--text-muted);">Quality announcements, manuals, procedures &amp; standards</p>
-                        </a>
+                        <div class="carousel-track-wrapper"><div class="carousel-track" id="carouselTrack"></div></div>
+                        <div class="carousel-footer"><div class="carousel-indicators" id="carouselIndicators"></div></div>
                     </div>
                 </section>
 
-                <section class="carousel-section" id="hrAnnouncementSection" style="display: none;">
-                    <div class="carousel-box"><div class="carousel-header"><span class="carousel-header-title">HR ANNOUNCEMENTS</span><a href="all.html?source=hr" class="carousel-header-arrow" aria-label="View all HR announcements">&rarr;</a></div><div class="carousel-track-wrapper"><div class="carousel-track" id="hrAnnouncementTrack"></div></div><div class="carousel-footer"><div class="carousel-indicators" id="hrAnnouncementIndicators"></div></div></div>
-                </section>
-
-                <section class="documents-section-box">
-                    <div class="portal-card-header"><h2 class="section-title text-primary">HR CORE</h2></div>
-                    <div class="documents-list" id="documentsList"></div>
-                </section>
-                </div>
-
-                <div class="portal-column">
+                <!-- 2. Photos & Video Gallery -->
                 <section class="media-gallery-section" id="mediaGallerySection">
                     <div class="media-gallery-header">
                         <h2 class="section-title text-primary">PHOTOS &amp; VIDEO GALLERY</h2>
-                        <div class="media-tabs"><button class="media-tab active" data-tab="photos">Photos</button><button class="media-tab" data-tab="videos">Videos</button></div>
+                        <div class="media-tabs">
+                            <button class="media-tab active" data-tab="photos">Photos</button>
+                            <button class="media-tab" data-tab="videos">Videos</button>
+                        </div>
                     </div>
-                    <div class="media-carousel-container"><button class="nav-btn prev-btn" id="mediaPrevBtn" aria-label="Previous media"><i class="bi bi-chevron-left"></i></button><div class="media-track-wrapper"><div class="media-track" id="mediaGalleryTrack"></div></div><button class="nav-btn next-btn" id="mediaNextBtn" aria-label="Next media"><i class="bi bi-chevron-right"></i></button></div>
+                    <div class="media-carousel-container">
+                        <button class="nav-btn prev-btn" id="mediaPrevBtn" aria-label="Previous media"><i class="bi bi-chevron-left"></i></button>
+                        <div class="media-track-wrapper"><div class="media-track" id="mediaGalleryTrack"></div></div>
+                        <button class="nav-btn next-btn" id="mediaNextBtn" aria-label="Next media"><i class="bi bi-chevron-right"></i></button>
+                    </div>
                 </section>
 
+                <!-- 3. News and Articles -->
                 <section class="news-section-box" id="newsSection" style="display: none;">
-                    <div class="portal-card-header"><h2 class="section-title text-primary">NEWS &amp; ARTICLES</h2><a href="all-news.html" class="carousel-header-arrow" aria-label="View all news articles">&rarr;</a></div>
+                    <div class="portal-card-header">
+                        <h2 class="section-title text-primary">NEWS &amp; ARTICLES</h2>
+                        <a href="all-news.html" class="carousel-header-arrow" aria-label="View all news articles">&rarr;</a>
+                    </div>
                     <div class="news-articles-list" id="newsArticlesList"></div>
                 </section>
 
+                <!-- 4. Health Tip -->
                 <section class="health-tip-section-box" id="healthTipSection" style="display: none;">
-                    <div class="portal-card-header"><h2 class="section-title text-primary">HEALTH TIP</h2></div>
-                    <div id="healthTipContent"><img id="healthTipImgDisplay" src="" alt="Health Tip" /><div id="healthTipTextDisplay"></div></div>
+                    <div class="portal-card-header">
+                        <h2 class="section-title text-primary">HEALTH TIP</h2>
+                    </div>
+                    <div id="healthTipContent">
+                        <img id="healthTipImgDisplay" src="" alt="Health Tip" />
+                        <div id="healthTipTextDisplay"></div>
+                    </div>
                 </section>
-                </div>
             </div>
-
 
         </div>
     </main>
@@ -107,7 +114,8 @@
         <div class="viewer-title" id="viewerTitle"></div>
     </div>
 
-    <!-- Script file -->
-    <script src="js/app.js?v=9"></script>
+    <!-- Scripts -->
+    <script src="js/portal-shell.js?v=1"></script>
+    <script src="js/app.js?v=10"></script>
 </body>
 </html>

@@ -26,10 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = parseInt(idParam, 10);
     const isAllView = sourceParam === 'all' || (sourceParam && sourceParam.endsWith('-all'));
     const announcementSource = sourceParam ? sourceParam.replace('-all', '') : 'feed';
+    // `tabUrl`/`tabLabel` point back at the tab that owns each feed.
     const sourceConfig = {
-        quality: { endpoint: '/api/qualityannouncements', listUrl: 'all.html?source=quality', listLabel: 'Quality Announcements' },
-        hr: { endpoint: '/api/hrannouncements', listUrl: 'all.html?source=hr', listLabel: 'HR Announcements' }
-    }[announcementSource] || { endpoint: '/api/announcements', listUrl: 'all.html', listLabel: 'All Announcements' };
+        quality: { endpoint: '/api/qualityannouncements', listUrl: 'all.html?source=quality', listLabel: 'Quality Announcements', tabUrl: '/quality.html', tabLabel: 'Quality Insights' },
+        hr: { endpoint: '/api/hrannouncements', listUrl: 'all.html?source=hr', listLabel: 'HR Announcements', tabUrl: '/hr-connect.html', tabLabel: 'HR Connect' }
+    }[announcementSource] || { endpoint: '/api/announcements', listUrl: 'all.html', listLabel: 'All Announcements', tabUrl: '/index.html', tabLabel: 'Home' };
 
     const backBtn = detailsWrapper.querySelector('.btn-back');
     if (backBtn) {
@@ -37,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             backBtn.href = sourceConfig.listUrl;
             backBtn.innerHTML = `<i class="bi bi-arrow-left"></i> Back to ${sourceConfig.listLabel}`;
         } else {
-            backBtn.href = 'index.html';
-            backBtn.innerHTML = '<i class="bi bi-arrow-left"></i> Back to Feed';
+            backBtn.href = sourceConfig.tabUrl;
+            backBtn.innerHTML = `<i class="bi bi-arrow-left"></i> Back to ${sourceConfig.tabLabel}`;
         }
     }
 

@@ -1,19 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const currentDateDisplay = document.getElementById('currentDate');
+    // The header date and the nav/banner shell are rendered by portal-shell.js.
     const refreshBtn = document.getElementById('refreshBtn');
 
     const section = document.getElementById('qualityAnnouncementSection');
     const track = document.getElementById('qualityAnnouncementTrack');
     const indicators = document.getElementById('qualityAnnouncementIndicators');
-
-    function updateHeaderDate() {
-        if (!currentDateDisplay) return;
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        currentDateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
-    }
-
-    updateHeaderDate();
-    setInterval(updateHeaderDate, 60000);
 
     function escapeHtml(str) {
         if (!str) return '';

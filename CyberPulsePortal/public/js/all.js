@@ -11,14 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateDisplay = document.getElementById('currentDate');
     const announcementHeading = document.getElementById('announcementHeading');
     const source = new URLSearchParams(window.location.search).get('source');
+    // `tabUrl`/`tabLabel` point back at the tab that owns each feed.
     const sourceConfig = {
-        quality: { endpoint: '/api/qualityannouncements', label: 'Quality Announcements' },
-        hr: { endpoint: '/api/hrannouncements', label: 'HR Announcements' }
-    }[source] || { endpoint: '/api/announcements', label: 'Announcements', source: 'all' };
+        quality: { endpoint: '/api/qualityannouncements', label: 'Quality Announcements', tabUrl: '/quality.html', tabLabel: 'Quality Insights' },
+        hr: { endpoint: '/api/hrannouncements', label: 'HR Announcements', tabUrl: '/hr-connect.html', tabLabel: 'HR Connect' }
+    }[source] || { endpoint: '/api/announcements', label: 'Announcements', source: 'all', tabUrl: '/index.html', tabLabel: 'Home' };
     updateHeaderDate();
 
     document.title = `${sourceConfig.label} - CyberPulse Portal`;
     if (announcementHeading) announcementHeading.textContent = sourceConfig.label;
+
+    const backBtn = document.querySelector('.btn-back');
+    if (backBtn) {
+        backBtn.href = sourceConfig.tabUrl;
+        backBtn.innerHTML = `<i class="bi bi-arrow-left"></i> Back to ${sourceConfig.tabLabel}`;
+    }
 
     fetch(sourceConfig.endpoint)
         .then(res => res.json())

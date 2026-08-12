@@ -9,13 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let docFiles = [];
     let currentMediaTab = 'photos';
     let currentMediaIndex = 0;
-    let currentQualityTab = 'QualityManual';
-    
+
     let currentSlide = 0;
     let carouselInterval = null;
 
     // DOM Elements
-    const currentDateDisplay = document.getElementById('currentDate');
     const refreshBtn = document.getElementById('refreshBtn');
 
     // Announcements
@@ -36,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Media Gallery
     const mediaTabs = document.querySelectorAll('.media-tab');
-    const qualityDocumentsList = document.getElementById('qualityDocumentsList');
     const mediaGalleryTrack = document.getElementById('mediaGalleryTrack');
     const mediaPrevBtn = document.getElementById('mediaPrevBtn');
     const mediaNextBtn = document.getElementById('mediaNextBtn');
@@ -48,9 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewerTitle = document.getElementById('viewerTitle');
     const viewerClose = document.getElementById('viewerClose');
 
-    // Update Date Display
-    updateHeaderDate();
-    setInterval(updateHeaderDate, 60000);
+    // This controller backs both the Home and HR Connect tabs. Every fetch/render
+    // below bails out when its target element is absent, so each page only ever
+    // loads the sections it actually mounts.
 
     // Initial Load
     fetchAnnouncements();
@@ -58,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchMediaFiles();
     fetchNewsArticles();
     fetchHealthTip();
-    fetchQualityDocuments();
 
     // Set up Auto-Refresh every 30 seconds
     setInterval(fetchAnnouncements, 30000);
@@ -66,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchMediaFiles, 30000);
     setInterval(fetchNewsArticles, 30000);
     setInterval(fetchHealthTip, 30000);
-    setInterval(fetchQualityDocuments, 30000);
 
     // Event Listeners
     if (refreshBtn) {
@@ -79,8 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 new Promise(resolve => fetchCategoryAnnouncements('/api/hrannouncements', hrAnnouncementSection, hrAnnouncementTrack, hrAnnouncementIndicators, 'hr', resolve)),
                 new Promise(resolve => fetchMediaFiles(resolve)),
                 new Promise(resolve => fetchNewsArticles(resolve)),
-                new Promise(resolve => fetchHealthTip(resolve)),
-                new Promise(resolve => fetchQualityDocuments(resolve))
+                new Promise(resolve => fetchHealthTip(resolve))
             ]).then(() => {
                 setTimeout(() => { icon.classList.remove('bi-spin'); }, 600);
             });
@@ -118,13 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Helper functions
-    function updateHeaderDate() {
-        if (!currentDateDisplay) return;
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        currentDateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
-    }
-
     function fetchAnnouncements(callback) {
+        if (!carouselSection) {
+            if (callback) callback();
+            return;
+        }
+
         fetch('/api/announcements')
             .then(res => res.json())
             .then(data => {
@@ -301,7 +294,14 @@ document.addEventListener('DOMContentLoaded', () => {
         start();
     }
 
+    // One endpoint feeds two sections: the gallery (Home) and the document list
+    // (HR Connect). Skip the call entirely when neither is on the page.
     function fetchMediaFiles(callback) {
+        if (!mediaGalleryTrack && !documentsList) {
+            if (callback) callback();
+            return;
+        }
+
         fetch('/api/hrfiles')
             .then(res => res.json())
             .then(data => {
@@ -452,6 +452,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === News & Articles ===
     function fetchNewsArticles(callback) {
+        if (!newsSection || !newsArticlesList) {
+            if (callback) callback();
+            return;
+        }
+
         fetch('/api/newsarticles')
             .then(res => res.json())
             .then(data => {
@@ -514,6 +519,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Health Tip Logic ---
     function fetchHealthTip(callback) {
+        if (!document.getElementById('healthTipSection')) {
+            if (callback) callback();
+            return;
+        }
+
         fetch('/api/healthtip', { cache: 'no-store' })
             .then(response => response.json())
             .then(data => {
@@ -557,108 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
-    }
-    function fetchQualityDocuments(callback) {
-        if (qualityDocumentsList) {
-            qualityDocumentsList.innerHTML = '<div style="padding: 20px; color: #777; text-align: center;"><i class="bi bi-arrow-clockwise bi-spin" style="margin-right: 8px;"></i> Loading documents...</div>';
-        }
-
-        fetch(`/api/qualityfiles?tab=${encodeURIComponent(currentQualityTab)}`, { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => {
-                renderQualityDocuments(data);
-                if (callback) callback();
-            })
-            .catch(err => {
-                console.error('Error fetching quality files:', err);
-                if (qualityDocumentsList) {
-                    qualityDocumentsList.innerHTML = '<div style="padding: 20px; color: #dc3545; text-align: center;">Error loading documents. Please try again.</div>';
-                }
-                if (callback) callback();
-            });
-    }
-
-    function renderQualityDocuments(files) {
-        if (!qualityDocumentsList) return;
-        
-        if (!files || files.length === 0) {
-            qualityDocumentsList.innerHTML = '<div style="padding: 10px; color: #777; grid-column: 1 / -1;">No documents available in this section.</div>';
-            return;
-        }
-
-        // Group files by subfolder dynamically
-        const groupedFiles = {};
-        const prefix = `/Uploads/QualityInside/${currentQualityTab}/`;
-        
-        files.forEach(item => {
-            let relativePath = '';
-            let normalizedFilePath = item.FilePath.replace(/\\/g, '/');
-            if (normalizedFilePath.startsWith(prefix)) {
-                const remainder = normalizedFilePath.substring(prefix.length);
-                const slashIndex = remainder.lastIndexOf('/');
-                if (slashIndex > -1) {
-                    relativePath = remainder.substring(0, slashIndex);
-                }
-            }
-            
-            if (!groupedFiles[relativePath]) {
-                groupedFiles[relativePath] = [];
-            }
-            groupedFiles[relativePath].push(item);
-        });
-
-        let html = '';
-        
-        // Sort folder keys to have root ('') first, then alphabetical
-        const folders = Object.keys(groupedFiles).sort((a, b) => {
-            if (a === '') return -1;
-            if (b === '') return 1;
-            return a.localeCompare(b);
-        });
-
-        folders.forEach(folder => {
-            html += `<div class="subfolder-section" style="margin-bottom: 25px; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e9ecef;">`;
-            
-            // Only show a header if it's a subfolder OR if there are multiple folders
-            if (folder !== '') {
-                html += `
-                    <h4 style="margin: 0 0 15px 0; font-size: 1.1rem; color: #0056b3; font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                        ${escapeHtml(folder.replace(/\//g, ' / '))}
-                    </h4>
-                `;
-            }
-            
-            const folderFiles = groupedFiles[folder];
-            html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; width: 100%;">`;
-            
-            html += folderFiles.map(item => {
-                let iconClass = 'bi-file-earmark-text';
-                let colorClass = '';
-                
-                const ext = item.FileName.split('.').pop().toLowerCase();
-                if (ext === 'pdf') { iconClass = 'bi-file-earmark-pdf-fill'; colorClass = 'pdf'; }
-                else if (['doc', 'docx'].includes(ext)) { iconClass = 'bi-file-earmark-word-fill'; colorClass = 'word'; }
-                else if (['xls', 'xlsx', 'csv'].includes(ext)) { iconClass = 'bi-file-earmark-excel-fill'; colorClass = 'excel'; }
-                else if (ext === 'txt') { iconClass = 'bi-file-earmark-text-fill'; colorClass = 'txt'; }
-
-                let displayName = item.FileName;
-                const underscoreIndex = displayName.indexOf('_');
-                if (underscoreIndex === 36) { // Length of Guid
-                    displayName = displayName.substring(underscoreIndex + 1);
-                }
-
-                return `
-                    <a href="${item.FilePath}" download="${escapeHtml(item.FileName)}" class="document-item hover-effect" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc; text-decoration: none; display: flex; align-items: center; gap: 10px; transition: all 0.2s;">
-                        <i class="bi ${iconClass} doc-icon ${colorClass}" style="font-size: 20px;"></i>
-                        <span style="font-weight: 500; font-size: 0.95rem; color: #334155; word-break: break-word;">${escapeHtml(displayName)}</span>
-                    </a>
-                `;
-            }).join('');
-            
-            html += `</div></div>`;
-        });
-
-        qualityDocumentsList.innerHTML = `<div style="display: grid; grid-template-columns: 1fr; width: 100%;">${html}</div>`;
     }
 });
 

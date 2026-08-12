@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Connect - CyberPulse Portal</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body>
+    <!-- Header Bar -->
+    <header class="header-bar">
+        <div class="container header-container">
+            <div class="brand">
+                <a href="/index.html" class="brand-link" aria-label="Go to home page">
+                    <i class="bi bi-cpu-fill brand-icon"></i>
+                    <span class="brand-name">CyberPulse</span>
+                </a>
+                <span class="brand-divider">/</span>
+                <span class="brand-page">HR Connect</span>
+            </div>
+            <div class="header-right">
+                <span class="date-display" id="currentDate">-- --- ----</span>
+                <button class="btn-refresh" id="refreshBtn" title="Check for updates">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation (rendered by portal-shell.js) -->
+    <nav data-portal-nav data-active="hr"></nav>
+
+    <!-- Page Banner (rendered by portal-shell.js) -->
+    <div data-portal-banner
+         data-title="HR Connect"
+         data-tagline="People First, Every Single Day"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container portal-container">
+            <div class="tab-grid">
+                <!-- 1. HR Announcement -->
+                <section class="carousel-section" id="hrAnnouncementSection" style="display: none;">
+                    <div class="carousel-box">
+                        <div class="carousel-header">
+                            <span class="carousel-header-title">HR ANNOUNCEMENTS</span>
+                            <a href="all.html?source=hr" class="carousel-header-arrow" aria-label="View all HR announcements">&rarr;</a>
+                        </div>
+                        <div class="carousel-track-wrapper"><div class="carousel-track" id="hrAnnouncementTrack"></div></div>
+                        <div class="carousel-footer"><div class="carousel-indicators" id="hrAnnouncementIndicators"></div></div>
+                    </div>
+                </section>
+
+                <!-- 2. HR Documents -->
+                <section class="documents-section-box" id="hrDocumentsSection">
+                    <div class="portal-card-header">
+                        <h2 class="section-title text-primary">HR DOCUMENTS</h2>
+                        <a href="all-documents.html" class="carousel-header-arrow" aria-label="View all HR documents">&rarr;</a>
+                    </div>
+                    <div class="documents-list" id="documentsList"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/portal-shell.js?v=1"></script>
+    <script src="js/app.js?v=10"></script>
+</body>
+</html>
