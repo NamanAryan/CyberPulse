@@ -14,7 +14,14 @@
     string activeMainTab = ViewBag.ActiveMainTab as string ?? "Documents";
     
     var announcements = ViewBag.Announcements as IEnumerable<CyberPulseAdministration.Models.QualityAnnouncement>;
-    ViewBag.Title = activeMainTab == "Announcements" ? "Quality Announcements" : "Quality Inside";
+
+    string mainTabHeading = activeMainTab == "Announcements" ? "Quality Announcements"
+        : activeMainTab == "Certificate" ? "Quality Certificate"
+        : "Quality Inside";
+    string mainTabDescription = activeMainTab == "Announcements" ? "Create and manage quality announcements."
+        : activeMainTab == "Certificate" ? "Manage quality certificates."
+        : "Manage your Quality Core documents.";
+    ViewBag.Title = mainTabHeading;
 }
 
 <style>
@@ -152,8 +159,8 @@
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h2 class="fw-bold mb-1" id="sectionHeading">@(activeMainTab == "Announcements" ? "Quality Announcements" : "Quality Inside")</h2>
-        <p class="text-secondary mb-0 small" id="sectionDescription">@(activeMainTab == "Announcements" ? "Create and manage quality announcements." : "Manage your Quality Core documents.")</p>
+        <h2 class="fw-bold mb-1" id="sectionHeading">@mainTabHeading</h2>
+        <p class="text-secondary mb-0 small" id="sectionDescription">@mainTabDescription</p>
     </div>
 </div>
 
@@ -180,6 +187,9 @@
     </button>
     <button class="main-tab-btn @(activeMainTab == "Announcements" ? "active" : "")" id="main-tab-Announcements" onclick="switchMainTab('Announcements', '@Url.Action("Announcements", "Quality")')">
         <i class="bi bi-megaphone me-1"></i> Announcements
+    </button>
+    <button class="main-tab-btn @(activeMainTab == "Certificate" ? "active" : "")" id="main-tab-Certificate" onclick="switchMainTab('Certificate', '@Url.Action("Certificate", "Quality")')">
+        <i class="bi bi-file-earmark me-1"></i> Quality Certificate
     </button>
 </div>
 
@@ -361,6 +371,20 @@
     </div>
 </div>
 
+<!-- Main Pane: Quality Certificate -->
+<div class="main-pane-content @(activeMainTab == "Certificate" ? "active" : "")" id="main-pane-Certificate">
+
+    <!-- Hidden upload form for Quality Certificate (PDF / image only) -->
+    @using (Html.BeginForm("Upload", "Quality", FormMethod.Post, new { enctype = "multipart/form-data", id = "form-QualityCertificate", style = "display:none" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tab" value="QualityCertificate" />
+        <input type="file" id="input-QualityCertificate" name="files" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="if (validateCertificateFiles(this)) { this.form.submit(); }" />
+    }
+
+    @RenderSingleSection("Quality Certificate", ViewBag.CertificateFiles, "QualityCertificate", formatSize)
+</div>
+
 @helper RenderSingleSection(string title, List<CyberPulseAdministration.Controllers.QualityFile> files, string uploadKey, Func<long, string> formatSize)
 {
     <div class="section-panel">
@@ -437,6 +461,7 @@
             case "Template": return "TemplateFormChecklist/Template";
             case "Form": return "TemplateFormChecklist/Form";
             case "Checklist": return "TemplateFormChecklist/Checklist";
+            case "QualityCertificate": return "QualityCertificate";
             default: return key;
         }
     }
@@ -445,11 +470,17 @@
 @section Scripts {
 <script>
     // --- Main Tab Switching (History API & Fade) ---
+    var mainTabInfo = {
+        'Documents': { heading: 'Quality Inside', description: 'Manage your Quality Core documents.' },
+        'Announcements': { heading: 'Quality Announcements', description: 'Create and manage quality announcements.' },
+        'Certificate': { heading: 'Quality Certificate', description: 'Manage quality certificates.' }
+    };
+
     function switchMainTab(tabId, url, pushState = true) {
-        var isAnnouncements = tabId === 'Announcements';
-        document.getElementById('sectionHeading').textContent = isAnnouncements ? 'Quality Announcements' : 'Quality Inside';
-        document.getElementById('sectionDescription').textContent = isAnnouncements ? 'Create and manage quality announcements.' : 'Manage your Quality Core documents.';
-        document.title = (isAnnouncements ? 'Quality Announcements' : 'Quality Inside') + ' - CyberPulse Admin Portal';
+        var info = mainTabInfo[tabId] || mainTabInfo['Documents'];
+        document.getElementById('sectionHeading').textContent = info.heading;
+        document.getElementById('sectionDescription').textContent = info.description;
+        document.title = info.heading + ' - CyberPulse Admin Portal';
 
         // Deactivate all main tabs and panes
         document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -487,13 +518,19 @@
     // Handle back/forward buttons
     window.addEventListener('popstate', function(e) {
         if (e.state && e.state.tabId) {
-            var url = (e.state.tabId === 'Documents') ? '@Url.Action("Documents", "Quality")' : '@Url.Action("Announcements", "Quality")';
-            switchMainTab(e.state.tabId, url, false);
+            var urls = {
+                'Documents': '@Url.Action("Documents", "Quality")',
+                'Announcements': '@Url.Action("Announcements", "Quality")',
+                'Certificate': '@Url.Action("Certificate", "Quality")'
+            };
+            switchMainTab(e.state.tabId, urls[e.state.tabId] || urls['Documents'], false);
         } else {
             // Default based on url
             var path = window.location.pathname.toLowerCase();
             if (path.indexOf('/announcements') > -1) {
                 switchMainTab('Announcements', null, false);
+            } else if (path.indexOf('/certificate') > -1) {
+                switchMainTab('Certificate', null, false);
             } else {
                 switchMainTab('Documents', null, false);
             }
@@ -509,6 +546,23 @@
         'QualityStandardGuidelines': 'QualityStandardGuidelines',
         'TemplateFormChecklist': 'TemplateFormChecklist'
     };
+
+    // Quality Certificate accepts PDFs and images only (also enforced server-side).
+    var certificateAllowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+
+    function validateCertificateFiles(input) {
+        var rejected = Array.from(input.files || []).filter(function (f) {
+            var ext = f.name.split('.').pop().toLowerCase();
+            return certificateAllowedExtensions.indexOf(ext) === -1;
+        }).map(function (f) { return f.name; });
+
+        if (rejected.length > 0) {
+            alert('Only PDF or image files (.pdf, .jpg, .jpeg, .png) can be uploaded to Quality Certificate.\n\nRejected: ' + rejected.join(', '));
+            input.value = '';
+            return false;
+        }
+        return true;
+    }
 
     function showDocTab(tabKey) {
         document.querySelectorAll('.tab-pane-content').forEach(p => p.classList.remove('active'));

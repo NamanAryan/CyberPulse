@@ -97,6 +97,49 @@ document.addEventListener('DOMContentLoaded', () => {
         start();
     }
 
+    // --- Quality Certificates (listed straight on the card, no click-through) ---
+    const certificateList = document.getElementById('qualityCertificateList');
+
+    function fetchQualityCertificates(callback) {
+        if (!certificateList) {
+            if (callback) callback();
+            return;
+        }
+
+        fetch('/api/qualityfiles?tab=QualityCertificate', { cache: 'no-store' })
+            .then(res => res.json())
+            .then(data => {
+                renderCertificates(data);
+                if (callback) callback();
+            })
+            .catch(err => {
+                console.error('Error fetching quality certificates:', err);
+                certificateList.innerHTML = '<div style="padding: 10px; color: #dc3545;">Error loading certificates. Please try again.</div>';
+                if (callback) callback();
+            });
+    }
+
+    function renderCertificates(files) {
+        if (!files || files.length === 0) {
+            certificateList.innerHTML = '<div style="padding: 10px; color: #777;">No certificates available.</div>';
+            return;
+        }
+
+        certificateList.innerHTML = files.map(item => {
+            // Uploaded files are stored as "<guid>_<original filename>".
+            let displayName = item.FileName;
+            if (displayName.indexOf('_') === 36) {
+                displayName = displayName.substring(37);
+            }
+
+            return `
+                <a href="${item.FilePath}" download="${escapeHtml(displayName)}" class="document-item">
+                    ${escapeHtml(displayName)}
+                </a>
+            `;
+        }).join('');
+    }
+
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
             const icon = refreshBtn.querySelector('i');
@@ -104,11 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchQualityAnnouncements(() => {
                 setTimeout(() => { icon.classList.remove('bi-spin'); }, 600);
             });
+            fetchQualityCertificates();
         });
     }
 
     fetchQualityAnnouncements();
     setInterval(fetchQualityAnnouncements, 30000);
+    fetchQualityCertificates();
 });
 
 if (!document.querySelector('style#spin-anim-style')) {

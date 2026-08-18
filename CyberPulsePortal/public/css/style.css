@@ -214,6 +214,12 @@ body {
     background-color: var(--purple-800);
     border-bottom: 3px solid var(--purple-600);
     box-shadow: var(--shadow-sm);
+    /* Stays in view while scrolling, docked under the sticky header bar. The
+       header's height varies with the viewport, so portal-shell.js measures it
+       into --portal-header-height rather than us hard-coding an offset. */
+    position: sticky;
+    top: var(--portal-header-height, 0px);
+    z-index: 90;
 }
 
 .portal-nav-inner {
@@ -1367,6 +1373,7 @@ body {
 .doc-icon.pdf { color: #d32f2f; }
 .doc-icon.word { color: #1976d2; }
 .doc-icon.excel { color: #388e3c; }
+.doc-icon.image { color: #7b1fa2; }
 
 /* === News & Articles Section === */
 .news-section-box {

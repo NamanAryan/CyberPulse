@@ -68,10 +68,27 @@
         setInterval(update, 60000);
     }
 
+    // The header bar and the nav are both sticky, so the nav has to dock right
+    // below the header. Publish the header's measured height as a CSS variable
+    // (see `.portal-nav` in style.css) so the offset survives wrapping headers
+    // and viewport changes.
+    function trackHeaderHeight() {
+        const header = document.querySelector('.header-bar');
+        if (!header) return;
+
+        const update = () => {
+            document.documentElement.style.setProperty('--portal-header-height', header.offsetHeight + 'px');
+        };
+
+        update();
+        window.addEventListener('resize', update);
+    }
+
     function init() {
         document.querySelectorAll('[data-portal-nav]').forEach(renderNav);
         document.querySelectorAll('[data-portal-banner]').forEach(renderBanner);
         startHeaderDate();
+        trackHeaderHeight();
     }
 
     if (document.readyState === 'loading') {

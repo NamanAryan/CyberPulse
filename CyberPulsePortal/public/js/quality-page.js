@@ -1,3 +1,6 @@
+// Every quality sub-tab folder lives under this single parent folder.
+const QUALITY_UPLOADS_URL = '/Uploads/QualityInside/QualityDocuments';
+
 document.addEventListener('DOMContentLoaded', () => {
     // Find the active tab to determine which documents to fetch
     const activeTabElem = document.querySelector('.quality-tab.active');
@@ -48,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Group files by subfolder dynamically
         const groupedFiles = {};
-        const prefix = `/Uploads/QualityInside/${currentTab}/`;
+        const prefix = `${QUALITY_UPLOADS_URL}/${currentTab}/`;
         
         files.forEach(item => {
             let relativePath = '';
@@ -115,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (['doc', 'docx'].includes(ext)) { iconClass = 'bi-file-earmark-word-fill'; colorClass = 'word'; }
                 else if (['xls', 'xlsx', 'csv'].includes(ext)) { iconClass = 'bi-file-earmark-excel-fill'; colorClass = 'excel'; }
                 else if (ext === 'txt') { iconClass = 'bi-file-earmark-text-fill'; colorClass = 'txt'; }
+                else if (['jpg', 'jpeg', 'png'].includes(ext)) { iconClass = 'bi-file-earmark-image-fill'; colorClass = 'image'; }
 
                 let displayName = item.FileName;
                 const underscoreIndex = displayName.indexOf('_');

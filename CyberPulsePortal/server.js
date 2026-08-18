@@ -22,6 +22,10 @@ app.use('/Uploads', express.static(UPLOADS_DIR));
 
 const HR_UPLOADS_DIR = path.join(UPLOADS_DIR, 'HrPortal');
 
+// Every quality sub-tab folder lives under this single parent folder.
+const QUALITY_UPLOADS_DIR = path.join(UPLOADS_DIR, 'QualityInside', 'QualityDocuments');
+const QUALITY_UPLOADS_URL = '/Uploads/QualityInside/QualityDocuments';
+
 function getLocalHrFiles() {
     const fileTypes = ['pdf', 'word', 'excel', 'txt', 'photo', 'video'];
     const files = [];
@@ -184,7 +188,7 @@ app.get('/api/qualityfiles', (req, res) => {
 
     // tab can be a nested path like "QualityStandardGuidelines/QualityStandard"
     // or a parent path like "QualityStandardGuidelines"
-    const dirPath = path.join(UPLOADS_DIR, 'QualityInside', ...tab.split('/'));
+    const dirPath = path.join(QUALITY_UPLOADS_DIR, ...tab.split('/'));
     
     if (!fs.existsSync(dirPath)) {
         return res.json([]);
@@ -226,7 +230,7 @@ app.get('/api/qualityfiles', (req, res) => {
     }
 
     try {
-        walkDir(dirPath, `/Uploads/QualityInside/${tab}`);
+        walkDir(dirPath, `${QUALITY_UPLOADS_URL}/${tab}`);
         // Sort by UploadDate descending
         fileList.sort((a, b) => new Date(b.UploadDate) - new Date(a.UploadDate));
         res.json(fileList);

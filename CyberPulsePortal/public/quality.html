@@ -11,7 +11,7 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
     <header class="header-bar">
@@ -56,7 +56,8 @@
                     </div>
                 </section>
 
-                <!-- 2. Quality Core Document Pyramid -->
+                <!-- 2. Quality Core Document Pyramid, with the certificate card stacked beneath it -->
+                <div style="display:flex; flex-direction:column; gap:14px; min-width:0;">
                 <section class="media-gallery-section">
                     <div class="portal-card-header">
                         <h2 class="section-title text-primary" style="text-align:left;">QUALITY CORE</h2>
@@ -91,12 +92,24 @@
                             </svg>
                     </div>
                 </section>
+
+                <!-- 3. Quality Certificate -->
+                <section class="media-gallery-section">
+                    <div class="portal-card-header">
+                        <h2 class="section-title text-primary" style="text-align:left;">QUALITY CERTIFICATE</h2>
+                        <a href="/quality/quality-certificate.html" class="carousel-header-arrow" aria-label="View all quality certificates">&rarr;</a>
+                    </div>
+                    <div class="documents-list" id="qualityCertificateList">
+                        <div style="padding: 10px; color: #777;">Loading certificates...</div>
+                    </div>
+                </section>
+                </div>
             </div>
         </div>
     </main>
 
     <!-- Scripts -->
-    <script src="js/portal-shell.js?v=1"></script>
+    <script src="js/portal-shell.js?v=2"></script>
     <script src="js/quality.js?v=2"></script>
 </body>
 </html>

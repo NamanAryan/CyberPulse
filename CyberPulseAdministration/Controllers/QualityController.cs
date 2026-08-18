@@ -23,9 +23,16 @@ namespace CyberPulseAdministration.Controllers
     {
         private readonly QualityAnnouncementRepository _announcementRepo = new QualityAnnouncementRepository();
 
+        // Every document sub-tab folder lives under this single parent folder.
+        private const string DocumentsRoot = "QualityDocuments";
+
+        // Sub-tab that only accepts PDF or image uploads.
+        private const string CertificateTab = "QualityCertificate";
+        private static readonly string[] CertificateAllowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png" };
+
         private string GetUploadPath(string tabPath)
         {
-            return Server.MapPath($"~/Uploads/QualityInside/{tabPath}");
+            return Server.MapPath($"~/Uploads/QualityInside/{DocumentsRoot}/{tabPath}");
         }
 
         private List<QualityFile> GetFiles(string tabPath)
@@ -70,6 +77,8 @@ namespace CyberPulseAdministration.Controllers
                 ViewBag.FormFiles = GetFiles("TemplateFormChecklist/Form");
                 ViewBag.ChecklistFiles = GetFiles("TemplateFormChecklist/Checklist");
 
+                ViewBag.CertificateFiles = GetFiles(CertificateTab);
+
                 // Announcements Data
                 ViewBag.Announcements = _announcementRepo.GetAll();
             }
@@ -102,6 +111,21 @@ namespace CyberPulseAdministration.Controllers
             return View("Index");
         }
 
+        // GET: Quality/Certificate
+        public ActionResult Certificate()
+        {
+            ViewBag.ActiveMainTab = "Certificate";
+            LoadQualityViewData();
+            return View("Index");
+        }
+
+        // Uploads and deletes return to the main tab the file belongs to.
+        private ActionResult RedirectToOwningTab(string tab)
+        {
+            var tabRoot = string.IsNullOrEmpty(tab) ? string.Empty : tab.Split('/')[0];
+            return RedirectToAction(tabRoot == CertificateTab ? "Certificate" : "Documents");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Upload(IEnumerable<HttpPostedFileBase> files, string tab)
@@ -114,13 +138,29 @@ namespace CyberPulseAdministration.Controllers
                     if (files.Any(f => f != null && f.ContentLength > maxFileSize))
                     {
                         TempData["ErrorMessage"] = "One or more files exceed the maximum allowed size of 5MB.";
-                        return RedirectToAction("Documents");
+                        return RedirectToOwningTab(tab);
                     }
 
                     var tabRoot = tab.Split('/')[0];
                     TempData["ActiveTab"] = tabRoot == "QualityStandardGuidelines" ? "QualityStandardGuidelines"
                         : tabRoot == "TemplateFormChecklist" ? "TemplateFormChecklist"
                         : tabRoot;
+
+                    if (tabRoot == CertificateTab)
+                    {
+                        var rejected = files
+                            .Where(f => f != null && f.ContentLength > 0
+                                && !CertificateAllowedExtensions.Contains(Path.GetExtension(f.FileName ?? string.Empty).ToLowerInvariant()))
+                            .Select(f => Path.GetFileName(f.FileName))
+                            .ToList();
+
+                        if (rejected.Any())
+                        {
+                            TempData["ErrorMessage"] = "Only PDF or image files (.pdf, .jpg, .jpeg, .png) can be uploaded to Quality Certificate. Rejected: " + string.Join(", ", rejected);
+                            return RedirectToOwningTab(tab);
+                        }
+                    }
+
                     string path = GetUploadPath(tab);
                     if (!Directory.Exists(path))
                     {
@@ -150,8 +190,8 @@ namespace CyberPulseAdministration.Controllers
             {
                 TempData["ErrorMessage"] = "Error uploading file: " + ex.Message;
             }
-            
-            return RedirectToAction("Documents");
+
+            return RedirectToOwningTab(tab);
         }
 
         [HttpPost]
@@ -178,7 +218,7 @@ namespace CyberPulseAdministration.Controllers
             {
                 TempData["ErrorMessage"] = "Error deleting file: " + ex.Message;
             }
-            return RedirectToAction("Documents");
+            return RedirectToOwningTab(tab);
         }
 
         public ActionResult Download(string tab, string fileName)
