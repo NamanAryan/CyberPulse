@@ -20,6 +20,7 @@
             {
                 @Html.AntiForgeryToken()
                 @Html.HiddenFor(m => m.ID)
+                @Html.HiddenFor(m => m.AnnouncementGuid)
 
                 <div class="row g-3">
                     <div class="col-12">

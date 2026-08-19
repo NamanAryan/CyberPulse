@@ -119,12 +119,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AnnouncementRepository.cs" />
     <Compile Include="Models\Announcement.cs" />
     <Compile Include="Models\NewsArticle.cs" />
     <Compile Include="Models\LoginViewModel.cs" />
     <Compile Include="Models\HrFile.cs" />
     <Compile Include="DataAccess\DatabaseInitializer.cs" />
+    <Compile Include="DataAccess\AnnouncementRepository.cs" />
     <Compile Include="DataAccess\HrFileRepository.cs" />
     <Compile Include="DataAccess\NewsArticleRepository.cs" />
     <Compile Include="App_Start\BundleConfig.cs" />

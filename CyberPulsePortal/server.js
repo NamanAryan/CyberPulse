@@ -187,8 +187,14 @@ app.get('/api/qualityfiles', (req, res) => {
     }
 
     // tab can be a nested path like "QualityStandardGuidelines/QualityStandard"
-    // or a parent path like "QualityStandardGuidelines"
-    const dirPath = path.join(QUALITY_UPLOADS_DIR, ...tab.split('/'));
+    // or a parent path like "QualityStandardGuidelines". Resolve it and confirm
+    // it stays inside the quality folder, so a "../" segment cannot walk out.
+    const qualityRoot = path.resolve(QUALITY_UPLOADS_DIR);
+    const dirPath = path.resolve(qualityRoot, ...tab.split('/'));
+
+    if (dirPath !== qualityRoot && !dirPath.startsWith(qualityRoot + path.sep)) {
+        return res.status(400).json({ error: 'Invalid tab parameter' });
+    }
     
     if (!fs.existsSync(dirPath)) {
         return res.json([]);

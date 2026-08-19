@@ -157,7 +157,7 @@
 </style>
 
 <!-- Hidden upload form (auto-submits on file select) -->
-@using (Html.BeginForm("Upload", "Hr", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm", style = "display:none" }))
+@using (Html.BeginForm("Upload", "Hr", FormMethod.Post, new { enctype = "multipart/form-data", id = "directUploadForm", style = "display:none" }))
 {
     @Html.AntiForgeryToken()
     <input type="file" id="directUploadInput" name="files" multiple
@@ -178,6 +178,16 @@
 </div>
 
 <div id="js-alert-container"></div>
+
+<!-- Upload progress. Uploads start straight from the toolbar button, so this
+     reports them inline on the page rather than inside a dialog. -->
+<div id="uploadProgressContainer" class="card p-3 mb-3" style="display: none;">
+    <p class="small text-secondary mb-2" id="uploadStatusText">Preparing upload...</p>
+    <div class="progress" style="height: 10px;">
+        <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+</div>
+<div id="uploadError" class="alert alert-danger py-2 mb-3" style="display: none;"></div>
 
 <!-- Alerts -->
 @if (TempData["SuccessMessage"] != null)
@@ -375,49 +385,6 @@
     </div>
 </div>
 
-<!-- Unified Upload File Modal with Progress Bar -->
-<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-labelledby="uploadFileModalLabel" aria-hidden="true" data-bs-backdrop="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            @using (Html.BeginForm("Upload", "Hr", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm" }))
-            {
-                @Html.AntiForgeryToken()
-                <div class="modal-header">
-                    <h5 class="modal-title" id="uploadFileModalLabel">
-                        <i class="bi bi-cloud-arrow-up me-2"></i>Upload Files
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="uploadCloseBtn"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- File Input -->
-                    <div class="mb-3">
-                        <label for="uploadFileInput" class="form-label small fw-medium">Select Files (Images, Videos, PDFs, Word, Excel, Text) <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control form-control-sm" id="uploadFileInput" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.mp4,.mov,.avi,.mkv,.jpg,.jpeg,.png,.gif,.webp" required />
-                        <div class="form-text">Large images will be automatically compressed to save bandwidth.</div>
-                    </div>
-
-                    <!-- Upload Progress -->
-                    <div id="uploadProgressContainer" style="display: none;">
-                        <p class="small text-secondary mb-1" id="uploadStatusText">Preparing upload...</p>
-                        <div class="progress" style="height: 10px;">
-                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-
-                    <!-- Client-side error area -->
-                    <div id="uploadModalError" class="alert alert-danger small py-2 mt-3" style="display: none;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" id="uploadCancelBtn">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm" id="uploadSubmitBtn">
-                        <i class="bi bi-upload me-1"></i>Upload
-                    </button>
-                </div>
-            }
-        </div>
-    </div>
-</div>
-
 <!-- Media Viewer Overlay -->
 <div class="viewer-overlay" id="mediaViewer">
     <button class="viewer-close" id="viewerClose"><i class="bi bi-x-lg"></i></button>
@@ -574,7 +541,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        var alerts = document.querySelectorAll('.alert:not(#uploadModalError)');
+        var alerts = document.querySelectorAll('.alert:not(#uploadError)');
         if (alerts.length > 0) {
             setTimeout(function() {
                 alerts.forEach(function(alert) {
@@ -711,17 +678,15 @@
 
     // --- Upload Logic (AJAX with progress bar, fallback to regular form POST) ---
     (function() {
-        var uploadForm   = document.getElementById('uploadForm');
-        var fileInput    = document.getElementById('uploadFileInput');
-        var submitBtn    = document.getElementById('uploadSubmitBtn');
-        var errorDiv     = document.getElementById('uploadModalError');
+        var uploadForm   = document.getElementById('directUploadForm');
+        var fileInput    = document.getElementById('directUploadInput');
+        var uploadBtn    = document.getElementById('uploadBtn');
+        var errorDiv     = document.getElementById('uploadError');
         var progressContainer = document.getElementById('uploadProgressContainer');
         var progressBar  = document.getElementById('uploadProgressBar');
         var statusText   = document.getElementById('uploadStatusText');
-        var uploadCloseBtn = document.getElementById('uploadCloseBtn');
-        var uploadCancelBtn= document.getElementById('uploadCancelBtn');
 
-        if (!uploadForm) return;
+        if (!uploadForm || !fileInput) return;
 
         var maxImageWidth = 1920;
         var maxImageHeight = 1080;
@@ -744,11 +709,9 @@
             e.preventDefault();
 
             errorDiv.style.display = 'none';
-            submitBtn.disabled = true;
+            if (uploadBtn) uploadBtn.disabled = true;
             fileInput.disabled = true;
-            uploadCloseBtn.disabled = true;
-            uploadCancelBtn.disabled = true;
-            
+
             progressContainer.style.display = 'block';
             progressBar.style.width = '0%';
             statusText.textContent = 'Preparing files...';
@@ -830,19 +793,11 @@
             }
         }
 
-        var modalEl = document.getElementById('uploadFileModal');
-        modalEl.addEventListener('hidden.bs.modal', function() {
-            fileInput.value = '';
-            errorDiv.style.display = 'none';
-            progressContainer.style.display = 'none';
-            resetUploadUI();
-        });
-
         function resetUploadUI() {
-            submitBtn.disabled = false;
+            if (uploadBtn) uploadBtn.disabled = false;
             fileInput.disabled = false;
-            uploadCloseBtn.disabled = false;
-            uploadCancelBtn.disabled = false;
+            // Clear the picker so re-choosing the same file still fires `change`.
+            fileInput.value = '';
             progressBar.style.width = '0%';
             progressBar.classList.remove('bg-success');
             progressBar.classList.add('progress-bar-animated');

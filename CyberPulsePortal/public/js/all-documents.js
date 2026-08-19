@@ -97,15 +97,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Rendering ---
     function updateCounts() {
-        const docs = allFiles.filter(f => f.FileType === 'pdf' || f.FileType === 'word' || f.FileType === 'txt');
+        const docs = allFiles.filter(f => isDocument(f));
         const media = allFiles.filter(f => f.FileType === 'photo' || f.FileType === 'video');
         countDocs.textContent = docs.length;
         countMedia.textContent = media.length;
         documentCount.textContent = `${allFiles.length} file${allFiles.length === 1 ? '' : 's'}`;
     }
 
+    // Mirrors the categories HrController assigns on upload: everything that
+    // is not photo/video is a document, Excel included.
+    function isDocument(file) {
+        return file.FileType === 'pdf' || file.FileType === 'word'
+            || file.FileType === 'excel' || file.FileType === 'txt';
+    }
+
     function getFilteredFiles() {
-        if (currentTab === 'docs') return allFiles.filter(f => f.FileType === 'pdf' || f.FileType === 'word' || f.FileType === 'txt');
+        if (currentTab === 'docs') return allFiles.filter(f => isDocument(f));
         if (currentTab === 'media') return allFiles.filter(f => f.FileType === 'photo' || f.FileType === 'video');
         return allFiles;
     }
@@ -147,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let iconColor = '#6b7280';
             if (item.FileType === 'pdf') { iconClass = 'bi-file-pdf'; iconColor = '#dc2626'; }
             else if (item.FileType === 'word') { iconClass = 'bi-file-word'; iconColor = '#2563eb'; }
+            else if (item.FileType === 'excel') { iconClass = 'bi-file-earmark-excel'; iconColor = '#16a34a'; }
             return `
                 <div class="doc-card">
                     <div class="doc-icon" style="color: ${iconColor};">

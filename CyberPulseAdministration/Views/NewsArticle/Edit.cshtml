@@ -73,9 +73,9 @@
                         <div class="form-group">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0 small fw-medium" for="Description">Description</label>
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-10 small" id="desc-counter">0 / 1024</span>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-10 small" id="desc-counter">0 / 60</span>
                             </div>
-                            @Html.TextAreaFor(m => m.Description, new { @class = "form-control form-control-sm", rows = 4, placeholder = "Enter a short description of the article or event", maxlength = "1024" })
+                            @Html.TextAreaFor(m => m.Description, new { @class = "form-control form-control-sm", rows = 2, placeholder = "Enter a short description of the article or event", maxlength = "60", style = "resize: none;" })
                             @Html.ValidationMessageFor(m => m.Description, "", new { @class = "text-danger small mt-1 d-block" })
                         </div>
                     </div>
@@ -139,7 +139,7 @@
             }
         }
 
-        setupCounter("Description", "desc-counter", 1024);
+        setupCounter("Description", "desc-counter", 60);
 
         // Image preview
         var imageInput = document.getElementById('ImageFile');
